@@ -4,7 +4,7 @@ Aplicación web progresiva (PWA) para el control diario de cuadrillas de campo.
 
 ## Versión
 
-**GitHub 1.0.0**
+**GitHub 1.1.0**
 
 ## Funciones principales
 
@@ -15,8 +15,10 @@ Aplicación web progresiva (PWA) para el control diario de cuadrillas de campo.
 - Autocompletado de clave, cuadrilla y labor.
 - Registro diario de pieza, obra, cable, terreno, torre inicial, torre final y actividad.
 - Cálculo automático de torres realizadas.
-- Conversión automática usando la regla **10 torres = 1 hectárea**.
+- Conversión automática usando exclusivamente la regla **10 torres = 1 hectárea**.
+- Reporte de horas trabajadas por registro.
 - Totales diarios por trabajador.
+- Cálculo económico a **₡4.350 por hectárea**.
 - Reporte diario para PDF/impresión.
 - Exportación Word.
 - Exportación Excel/CSV.
@@ -56,4 +58,4 @@ La versión actual abre el cliente de correo o la función de compartir del disp
 
 ## Repositorio previsto
 
-`krisanthco-stack/libreta-control-cuadrilla`
+`krisanthco-stack/CONTROL-DE-PAGOS`
