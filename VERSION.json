@@ -1,23 +1,25 @@
 {
   "app": "Libreta de Control de Cuadrilla",
-  "version": "1.3.2-mobile",
-  "mobile_only": true,
-  "activity_field": false,
+  "version": "1.4.0-modular",
+  "ui": "modular",
+  "modules": [
+    "Control de bloque",
+    "Jornada",
+    "Reportes",
+    "Ajustes"
+  ],
+  "supervisor": "Marco Tulio Castillo, capataz deshoja",
   "default_code": "5969",
   "default_piece": "4350",
   "default_labor": "Deshoja",
+  "time_fields_editable": true,
   "tower_range": "01-129",
   "tower_rule": "10 torres = 1 hectárea",
   "rate_crc_per_hectare": 4350,
+  "vectors": false,
+  "activity_field": false,
+  "worker_delete_button": "small-inline",
   "autosave": true,
   "pwa": true,
-  "report_layout": "compact-6-column",
-  "word_export": true,
-  "excel_export": "styled-html-xls",
-  "pdf_print_layout": "A4-portrait-compact",
-  "time_fields_editable": true,
-  "report_pdf": "A4 portrait, compact 6-column, totals footer",
-  "report_word": "compact 6-column, same matrix as PDF",
-  "report_excel": "styled XLS, compact 6-column, same matrix as PDF/Word",
-  "report_data_source": "single shared normalized matrix"
+  "reports": "PDF Word Excel compact 6-column shared matrix"
 }
