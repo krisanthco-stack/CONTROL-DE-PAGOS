@@ -1,11 +1,14 @@
 {
   "app": "Libreta de Control de Cuadrilla",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "target": "GitHub Pages",
   "owner": "krisanthco-stack",
   "repository_expected": "libreta-control-cuadrilla",
   "offline_storage": "IndexedDB",
   "pwa": true,
   "supervisor_fixed": "Marco Tulio Castillo, capataz deshoja",
-  "tower_rule": "10 torres = 1 hectárea"
+  "tower_rule": "10 torres = 1 hectárea",
+  "rate_crc_per_hectare": 4350,
+  "hours_report": true,
+  "vector_mode": false
 }

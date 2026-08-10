@@ -1,0 +1,28 @@
+ACTUALIZACIÓN MANUAL - LIBRETA DE CONTROL DE CUADRILLA
+VERSIÓN 1.1.0
+
+Repositorio:
+krisanthco-stack/CONTROL-DE-PAGOS
+
+1. Reemplace/suba en la raíz del repositorio todos los archivos incluidos en este ZIP.
+2. Mantenga exactamente estos nombres de archivo.
+3. No agregue lógica de Fiscalización.
+4. Esta versión NO incluye vectores.
+5. Parámetros funcionales:
+   - Capataz: Marco Tulio Castillo, capataz deshoja.
+   - 10 torres = 1 hectárea.
+   - Tarifa: ₡4.350 por hectárea.
+   - Registro de hora inicial y hora final.
+   - Cálculo de horas trabajadas.
+   - Bloque actual persistente y editable.
+   - Área total de supervisión persistente y editable.
+   - Base local de trabajadores en IndexedDB.
+   - Reportes PDF/impresión, Word y Excel/CSV.
+   - Envío de resumen mediante cliente de correo/compartir.
+   - PWA instalable y funcionamiento offline luego de la primera carga.
+
+Después de subir:
+- Verifique GitHub Pages.
+- Abra la aplicación una vez con internet.
+- Cierre y vuelva a abrir para validar modo offline.
+- Si el navegador conserva una versión anterior, recargue forzadamente o borre datos del sitio una vez.

@@ -1,7 +1,9 @@
-const CACHE_NAME = 'libreta-cuadrilla-github-v1.0.0';
+const CACHE_NAME = 'libreta-cuadrilla-github-v1.1.0';
 const CORE_ASSETS = [
   './',
   './index.html',
+  './styles.css',
+  './app.js',
   './manifest.webmanifest',
   './logo.svg',
   './icon-192.png',
