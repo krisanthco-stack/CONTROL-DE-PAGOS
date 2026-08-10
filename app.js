@@ -1,627 +1,259 @@
-const ENCARGADO_FIJO = 'Marco Tulio Castillo, capataz deshoja';
-    const TARIFA_HECTAREA = 4350;
-    const DB_NAME = 'libreta_control_cuadrilla_pwa_v1';
-    const DB_VERSION = 1;
-    const SETTINGS = { bloque: 'bloque_actual', area: 'area_supervision_total', email: 'correo_reporte' };
-    let db, deferredPrompt = null;
 
-    const $ = (id) => document.getElementById(id);
-    const today = () => new Date().toISOString().slice(0,10);
-    const esc = (v) => String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;', "'":'&#039;'}[m]));
-    const fmt2 = (n) => Number(n || 0).toFixed(2);
+const DB_NAME='libreta_control_cuadrilla_pwa_v1',DB_VERSION=1;
+const DRAFT_FORM_KEY='cuadrilla_mobile_form_draft_v1_2',DRAFT_ENTRIES_KEY='cuadrilla_mobile_entries_draft_v1_2';
+const TARIFA_HECTAREA=4350,DEFAULTS={clave:'5969',pieza:'4350',labor:'Deshoja'};
+const SETTINGS={block:'bloque_actual',area:'area_supervision_total',email:'correo_reporte'};
+let db,deferredPrompt=null;
+const $=id=>document.getElementById(id),today=()=>new Date().toISOString().slice(0,10),fmt2=n=>Number(n||0).toFixed(2),money=n=>'₡'+Math.round(Number(n||0)).toLocaleString('es-CR');
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 
-    function showView(view){
-      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-      const section = document.getElementById(view);
-      if(section) section.classList.add('active');
-      document.querySelectorAll(`.nav-btn[data-view="${view}"]`).forEach(b => b.classList.add('active'));
-      const meta = {
-        inicio:['Control de bloque','Capataz, bloque, área total de supervisión y base de trabajadores.'],
-        jornada:['Jornada','Registro rápido en campo y resultados por trabajador.'],
-        reportes:['Reportes','Generación, descarga y envío del informe final.'],
-        ajustes:['Ajustes','Configuración del correo para los reportes.']
-      };
-      $('pageTitle').textContent = meta[view][0];
-      $('pageDesc').textContent = meta[view][1];
-      if(view === 'reportes') renderReports();
-    }
+function openDB(){return new Promise((resolve,reject)=>{const r=indexedDB.open(DB_NAME,DB_VERSION);r.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains('workers'))d.createObjectStore('workers',{keyPath:'id',autoIncrement:true});if(!d.objectStoreNames.contains('records'))d.createObjectStore('records',{keyPath:'id',autoIncrement:true});if(!d.objectStoreNames.contains('settings'))d.createObjectStore('settings',{keyPath:'key'});};r.onsuccess=()=>{db=r.result;resolve(db)};r.onerror=()=>reject(r.error)})}
+const os=(n,m='readonly')=>db.transaction(n,m).objectStore(n);
+function getAll(n){return new Promise((res,rej)=>{const r=os(n).getAll();r.onsuccess=()=>res(r.result||[]);r.onerror=()=>rej(r.error)})}
+function add(n,o){return new Promise((res,rej)=>{const r=os(n,'readwrite').add(o);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+function put(n,o){return new Promise((res,rej)=>{const r=os(n,'readwrite').put(o);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+function del(n,id){return new Promise((res,rej)=>{const r=os(n,'readwrite').delete(Number(id));r.onsuccess=()=>res();r.onerror=()=>rej(r.error)})}
+function getSetting(k,f=''){return new Promise((res,rej)=>{const r=os('settings').get(k);r.onsuccess=()=>res(r.result?.value??f);r.onerror=()=>rej(r.error)})}
+const setSetting=(k,v)=>put('settings',{key:k,value:v});
 
-    async function openDB(){
-      return new Promise((resolve, reject) => {
-        const req = indexedDB.open(DB_NAME, DB_VERSION);
-        req.onupgradeneeded = (e) => {
-          const d = e.target.result;
-          if(!d.objectStoreNames.contains('workers')){
-            const s = d.createObjectStore('workers', { keyPath: 'id', autoIncrement: true });
-            s.createIndex('name', 'name', { unique: false });
-          }
-          if(!d.objectStoreNames.contains('records')){
-            const s = d.createObjectStore('records', { keyPath: 'id', autoIncrement: true });
-            s.createIndex('date', 'date', { unique: false });
-          }
-          if(!d.objectStoreNames.contains('settings')){
-            d.createObjectStore('settings', { keyPath: 'key' });
-          }
-        };
-        req.onsuccess = () => { db = req.result; resolve(db); };
-        req.onerror = () => reject(req.error);
-      });
-    }
+function towerOptions(){const a=['<option value="">Seleccione</option>'];for(let i=1;i<=129;i++){const v=String(i).padStart(2,'0');a.push(`<option value="${i}">${v}</option>`)}$('torreInicio').innerHTML=a.join('');$('torreFin').innerHTML=a.join('')}
+function towerCount(a,b){a=Number(a);b=Number(b);return a&&b?Math.abs(b-a)+1:0}
+function minutesBetween(a,b){if(!a||!b)return 0;let [ah,am]=a.split(':').map(Number),[bh,bm]=b.split(':').map(Number);let s=ah*60+am,e=bh*60+bm;if(e<s)e+=1440;return Math.max(0,e-s)}
+function humanMinutes(m){return `${Math.floor(m/60)} h ${String(m%60).padStart(2,'0')} min`}
+function calc(){const minutes=minutesBetween($('horaInicio').value,$('horaFin').value),towers=towerCount($('torreInicio').value,$('torreFin').value),hectares=towers/10;return{minutes,hours:minutes/60,towers,hectares,amount:hectares*TARIFA_HECTAREA}}
+function updatePreview(){const c=calc();$('hoursHuman').textContent=humanMinutes(c.minutes);$('hoursDecimal').textContent=`${fmt2(c.hours)} horas`;$('towerCount').textContent=c.towers;$('hectares').textContent=fmt2(c.hectares);$('amount').textContent=money(c.amount);$('previewLabor').textContent=$('labor').value||'—';$('previewPiece').textContent=$('pieza').value||'—';$('previewHours').textContent=humanMinutes(c.minutes);$('previewTowers').textContent=c.towers?`${String($('torreInicio').value).padStart(2,'0')} → ${String($('torreFin').value).padStart(2,'0')}`:'—';$('previewHa').textContent=`${fmt2(c.hectares)} ha`;$('previewAmount').textContent=money(c.amount)}
 
-    function txStore(name, mode='readonly'){
-      return db.transaction(name, mode).objectStore(name);
-    }
-    function getAll(store){
-      return new Promise((resolve, reject) => {
-        const req = txStore(store).getAll();
-        req.onsuccess = () => resolve(req.result || []);
-        req.onerror = () => reject(req.error);
-      });
-    }
-    function put(store, obj){
-      return new Promise((resolve, reject) => {
-        const req = txStore(store, 'readwrite').put(obj);
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error);
-      });
-    }
-    function add(store, obj){
-      return new Promise((resolve, reject) => {
-        const req = txStore(store, 'readwrite').add(obj);
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error);
-      });
-    }
-    function removeItem(store, id){
-      return new Promise((resolve, reject) => {
-        const req = txStore(store, 'readwrite').delete(Number(id));
-        req.onsuccess = () => resolve(true);
-        req.onerror = () => reject(req.error);
-      });
-    }
-    async function getSetting(key, fallback=''){
-      return new Promise((resolve, reject) => {
-        const req = txStore('settings').get(key);
-        req.onsuccess = () => resolve(req.result?.value ?? fallback);
-        req.onerror = () => reject(req.error);
-      });
-    }
-    async function setSetting(key, value){
-      return put('settings', { key, value });
-    }
+function saveFormDraft(){const d={fecha:$('fecha').value,workerSelect:$('workerSelect').value,clave:$('clave').value,cuadrilla:$('cuadrilla').value,pieza:$('pieza').value,labor:$('labor').value,horaInicio:$('horaInicio').value,horaFin:$('horaFin').value,torreInicio:$('torreInicio').value,torreFin:$('torreFin').value};localStorage.setItem(DRAFT_FORM_KEY,JSON.stringify(d))}
+function restoreFormDraft(){try{const d=JSON.parse(localStorage.getItem(DRAFT_FORM_KEY)||'null');if(!d)return false;Object.entries(d).forEach(([k,v])=>{if($(k))$(k).value=v});return true}catch{return false}}
+function resetForm(){const date=$('fecha').value||today();$('fieldForm').reset();$('fecha').value=date;$('clave').value=DEFAULTS.clave;$('pieza').value=DEFAULTS.pieza;$('labor').value=DEFAULTS.labor;$('cuadrilla').value='';localStorage.removeItem(DRAFT_FORM_KEY);updatePreview()}
+function drafts(){try{return JSON.parse(localStorage.getItem(DRAFT_ENTRIES_KEY)||'[]')}catch{return[]}}
+function setDrafts(a){localStorage.setItem(DRAFT_ENTRIES_KEY,JSON.stringify(a));renderDrafts()}
+function currentData(){const c=calc(),opt=$('workerSelect').selectedOptions[0];return{id:Date.now()+Math.random(),date:$('fecha').value,workerId:Number($('workerSelect').value)||null,workerName:opt?.dataset?.name||opt?.textContent||'',code:$('clave').value.trim(),team:$('cuadrilla').value.trim(),piece:$('pieza').value.trim(),labor:$('labor').value.trim(),startTime:$('horaInicio').value,endTime:$('horaFin').value,minutes:c.minutes,hours:c.hours,towerStart:Number($('torreInicio').value)||0,towerEnd:Number($('torreFin').value)||0,totalTowers:c.towers,hectares:c.hectares,amount:c.amount,createdAt:new Date().toISOString()}}
+function entryCard(r){const range=r.totalTowers?`${String(r.towerStart).padStart(2,'0')} → ${String(r.towerEnd).padStart(2,'0')}`:'Sin torres';return `<article class="entry-card"><div class="entry-top"><h3>${esc(r.workerName||'Trabajador')}</h3><span class="entry-time">${esc(r.startTime||'—')}–${esc(r.endTime||'—')}</span></div><div class="entry-meta"><span>${esc(r.labor||'—')}</span><span>Pieza ${esc(r.piece||'—')}</span><span>${humanMinutes(Number(r.minutes||0))}</span><span>Torres ${range}</span><span>${fmt2(r.hectares)} ha</span><span>${money(r.amount)}</span></div></article>`}
+function renderDrafts(){const a=drafts();$('draftCount').textContent=a.length;$('draftEntries').innerHTML=a.length?a.slice().reverse().map(entryCard).join(''):'<div class="empty-state">Todavía no hay entradas guardadas.</div>';const mins=a.reduce((s,r)=>s+Number(r.minutes||0),0),ha=a.reduce((s,r)=>s+Number(r.hectares||0),0),amt=a.reduce((s,r)=>s+Number(r.amount||0),0);$('draftHours').textContent=humanMinutes(mins);$('draftHa').textContent=`${fmt2(ha)} ha`;$('draftAmount').textContent=money(amt);$('undoLastBtn').disabled=!a.length;$('finalizeBtn').disabled=!a.length}
 
-    function parseTower(value){
-      const s = String(value || '').trim().toUpperCase();
-      if(!s) return null;
-      const m = s.match(/^(.*?)(\d+)$/);
-      if(!m) return null;
-      return { prefix: m[1].replace(/[\s_-]+$/,''), number: Number(m[2]) };
-    }
-    function computeTowers(start, end){
-      const a = parseTower(start);
-      const b = parseTower(end);
-      if(!a || !b || a.prefix !== b.prefix) return 0;
-      return Math.abs(b.number - a.number) + 1;
-    }
+async function renderWorkers(){const a=(await getAll('workers')).sort((x,y)=>String(x.name).localeCompare(String(y.name)));$('workerSelect').innerHTML='<option value="">Seleccione trabajador</option>'+a.map(w=>`<option value="${w.id}" data-name="${esc(w.name)}">${esc(w.name)}</option>`).join('');$('workerList').innerHTML=a.length?a.map(w=>`<div class="worker-row"><div><strong>${esc(w.name)}</strong><small>Clave ${esc(w.code||DEFAULTS.clave)} · ${esc(w.team||'Sin cuadrilla')}</small></div><button data-delete-worker="${w.id}">Eliminar</button></div>`).join(''):'<div class="empty-state">No hay trabajadores registrados.</div>'}
+async function loadSettings(){const b=await getSetting(SETTINGS.block,''),a=await getSetting(SETTINGS.area,''),e=await getSetting(SETTINGS.email,'');$('blockInput').value=b;$('areaInput').value=a;$('emailInput').value=e;$('headerBlock').textContent=b||'Sin definir';$('headerArea').textContent=a!==''?`${fmt2(a)} ha supervisión`:'Área sin definir'}
 
-    function computeHours(start, end){
-      if(!start || !end) return 0;
-      const [sh, sm] = start.split(':').map(Number);
-      const [eh, em] = end.split(':').map(Number);
-      if([sh, sm, eh, em].some(Number.isNaN)) return 0;
-      let startMin = sh * 60 + sm;
-      let endMin = eh * 60 + em;
-      if(endMin < startMin) endMin += 24 * 60;
-      return Math.max(0, (endMin - startMin) / 60);
-    }
+async function finalize(){const a=drafts();if(!a.length)return;const block=await getSetting(SETTINGS.block,''),area=await getSetting(SETTINGS.area,'');for(const e of a){await add('records',{...e,towerStart:String(e.towerStart).padStart(2,'0'),towerEnd:String(e.towerEnd).padStart(2,'0'),block,supervisionArea:area,encargado:'Marco Tulio Castillo, capataz deshoja',finalizedAt:new Date().toISOString()})}localStorage.removeItem(DRAFT_ENTRIES_KEY);localStorage.removeItem(DRAFT_FORM_KEY);renderDrafts();resetForm();$('reportDate').value=a[0]?.date||today();await renderReport();switchScreen('screenResumen')}
 
-    function formatCRC(value){
-      return '₡' + Math.round(Number(value || 0)).toLocaleString('es-CR');
-    }
+function compactReportRow(r){
+  const start=String(r.towerStart||'').padStart(2,'0');
+  const end=String(r.towerEnd||'').padStart(2,'0');
+  return {
+    worker:`${r.workerName||'—'}\nClave: ${r.code||'—'} · ${r.team||'Sin cuadrilla'}`,
+    schedule:`${r.startTime||'—'} - ${r.endTime||'—'}\n${humanMinutes(Number(r.minutes||0))}`,
+    work:`${r.labor||'Deshoja'}\nPieza: ${r.piece||'4350'}`,
+    towers:r.totalTowers?`${start} - ${end}\n${Number(r.totalTowers||0)} torres`:'—',
+    hectares:fmt2(r.hectares),
+    amount:money(r.amount)
+  };
+}
 
-    function aggregateByWorker(rows){
-      const map = new Map();
-      rows.forEach(r => {
-        const key = `${r.workerId}|${r.workerName}`;
-        if(!map.has(key)){
-          map.set(key, {
-            workerName: r.workerName,
-            code: r.code,
-            team: r.team,
-            towers: 0,
-            hectares: 0,
-            hours: 0,
-            amount: 0,
-            details: new Set()
-          });
-        }
-        const item = map.get(key);
-        item.towers += Number(r.totalTowers || 0);
-        item.hectares += Number(r.hectares || 0);
-        item.hours += Number(r.hours || 0);
-        item.amount += Number(r.amount ?? (Number(r.hectares || 0) * TARIFA_HECTAREA));
-        if(r.activity) item.details.add(r.activity);
-      });
-      return [...map.values()].sort((a,b) => a.workerName.localeCompare(b.workerName));
-    }
+function compactRowHtml(r){
+  const c=compactReportRow(r);
+  const cell=v=>{
+    const parts=String(v).split('\n');
+    return `<strong>${esc(parts[0])}</strong>${parts.slice(1).map(x=>`<small>${esc(x)}</small>`).join('')}`;
+  };
+  return `<tr>
+    <td>${cell(c.worker)}</td>
+    <td>${cell(c.schedule)}</td>
+    <td>${cell(c.work)}</td>
+    <td>${cell(c.towers)}</td>
+    <td><strong>${esc(c.hectares)}</strong></td>
+    <td><strong>${esc(c.amount)}</strong></td>
+  </tr>`;
+}
 
-    async function refreshWorkerSelect(){
-      const workers = await getAll('workers');
-      $('workerSelect').innerHTML = '<option value="">Seleccione…</option>' + workers
-        .sort((a,b)=>a.name.localeCompare(b.name))
-        .map(w => `<option value="${w.id}">${esc(w.name)} · ${esc(w.code)}</option>`).join('');
-    }
+function compactTotalsHtml(r){
+  return `<tr class="total-row">
+    <td><strong>TOTALES</strong><small>${r.workers} trabajador${r.workers===1?'':'es'}</small></td>
+    <td><strong>${esc(humanMinutes(r.mins))}</strong></td>
+    <td><strong>—</strong></td>
+    <td><strong>${r.towers}</strong><small>torres</small></td>
+    <td><strong>${fmt2(r.ha)}</strong></td>
+    <td><strong>${esc(money(r.amount))}</strong></td>
+  </tr>`;
+}
 
-    async function renderWorkers(){
-      const workers = await getAll('workers');
-      await refreshWorkerSelect();
-      const q = $('workerSearch').value.trim().toLowerCase();
-      const filtered = workers.filter(w => [w.name,w.code,w.team,w.labor].join(' ').toLowerCase().includes(q));
+async function renderReport(){
+  const date=$('reportDate').value||today();
+  $('reportDate').value=date;
+  const rows=(await getAll('records')).filter(r=>r.date===date);
+  const block=await getSetting(SETTINGS.block,''),area=await getSetting(SETTINGS.area,'');
+  const effectiveBlock=rows[0]?.block||block||'Sin definir';
+  const effectiveArea=rows[0]?.supervisionArea!==undefined&&rows[0]?.supervisionArea!==''?fmt2(rows[0].supervisionArea)+' ha':(area!==''?fmt2(area)+' ha':'Sin definir');
 
-      $('workerList').innerHTML = filtered.length ? filtered.map(w => `
-        <div class="worker-item">
-          <div>
-            <h4>${esc(w.name)}</h4>
-            <p><strong>Clave:</strong> ${esc(w.code)} · <strong>Cuadrilla:</strong> ${esc(w.team)}</p>
-            <p><strong>Labor base:</strong> ${esc(w.labor || '—')}</p>
-          </div>
-          <div class="mini-actions">
-            <button class="btn secondary" onclick="editWorker(${w.id})">Editar</button>
-            <button class="btn danger" onclick="deleteWorker(${w.id})">Eliminar</button>
-          </div>
-        </div>
-      `).join('') : '<div class="empty">No hay trabajadores registrados.</div>';
-    }
+  const normalized=rows.map(r=>({
+    ...r,
+    minutes:Number(r.minutes??Math.round(Number(r.hours||0)*60)),
+    amount:Number(r.amount??Number(r.hectares||0)*TARIFA_HECTAREA)
+  }));
 
-    window.editWorker = async (id) => {
-      const workers = await getAll('workers');
-      const w = workers.find(x => x.id === id);
-      if(!w) return;
-      $('workerId').value = w.id;
-      $('workerName').value = w.name;
-      $('workerCode').value = w.code;
-      $('workerTeam').value = w.team;
-      $('workerLabor').value = w.labor || '';
-      showView('inicio');
-      window.scrollTo({ top:0, behavior:'smooth' });
-    };
+  // Keep capture order stable; identical data drives every output format.
+  const mins=normalized.reduce((s,r)=>s+r.minutes,0);
+  const towers=normalized.reduce((s,r)=>s+Number(r.totalTowers||0),0);
+  const ha=normalized.reduce((s,r)=>s+Number(r.hectares||0),0);
+  const amount=normalized.reduce((s,r)=>s+r.amount,0);
+  const workers=new Set(normalized.map(r=>r.workerId||r.workerName)).size;
 
-    window.deleteWorker = async (id) => {
-      if(confirm('¿Eliminar este trabajador de la base local?')){
-        await removeItem('workers', id);
-        await renderAll();
-      }
-    };
+  const report={
+    date,rows:normalized,mins,towers,ha,amount,workers,
+    block:effectiveBlock,area:effectiveArea
+  };
 
-    async function workerAutofill(){
-      const workers = await getAll('workers');
-      const w = workers.find(x => x.id === Number($('workerSelect').value));
-      $('claveAuto').value = w?.code || '';
-      $('cuadrillaAuto').value = w?.team || '';
-      $('laborAuto').value = w?.labor || '';
-    }
+  $('reportContext').innerHTML=`<strong>Marco Tulio Castillo · Capataz deshoja</strong><br>Bloque: ${esc(report.block)} · Área de supervisión: ${esc(report.area)}<br>Fecha: ${esc(report.date)} · Tarifa: ₡4.350 por hectárea`;
+  $('reportWorkers').textContent=workers;
+  $('reportHours').textContent=humanMinutes(mins);
+  $('reportTowers').textContent=towers;
+  $('reportHa').textContent=`${fmt2(ha)} ha`;
+  $('reportAmount').textContent=money(amount);
 
-    function updateComputedResult(){
-      const towers = computeTowers($('torreInicial').value, $('torreFinal').value);
-      const hectares = towers / 10;
-      const hours = computeHours($('horaInicio').value, $('horaFinal').value);
-      const amount = hectares * TARIFA_HECTAREA;
-      $('torresCalc').textContent = towers;
-      $('haCalc').textContent = fmt2(hectares);
-      $('horasCalc').textContent = fmt2(hours);
-      $('montoCalc').textContent = formatCRC(amount);
-    }
+  $('reportList').innerHTML=normalized.length
+    ? normalized.map(entryCard).join('')
+    : '<div class="empty-state">No hay reporte finalizado para esta fecha.</div>';
 
-    async function renderDaily(){
-      const date = $('jornadaDate').value || today();
-      $('jornadaDate').value = date;
-      const records = (await getAll('records')).filter(r => r.date === date).sort((a,b)=>a.workerName.localeCompare(b.workerName));
-      const block = await getSetting(SETTINGS.bloque, '');
-      $('recordsTable').innerHTML = records.length ? records.map(r => `
-        <tr>
-          <td>${esc(r.date)}</td>
-          <td>${esc(r.block || block || 'Sin definir')}</td>
-          <td>${esc(r.workerName)}</td>
-          <td>${esc(r.code)}</td>
-          <td>${esc(r.team)}</td>
-          <td>${esc(r.labor)}</td>
-          <td>${esc(r.startTime || '')}</td>
-          <td>${esc(r.endTime || '')}</td>
-          <td>${fmt2(r.hours || 0)}</td>
-          <td>${esc(r.towerStart)}</td>
-          <td>${esc(r.towerEnd)}</td>
-          <td>${esc(r.totalTowers)}</td>
-          <td>${fmt2(r.hectares)}</td>
-          <td>${formatCRC(r.amount ?? (Number(r.hectares || 0) * TARIFA_HECTAREA))}</td>
-          <td>${esc(r.activity)}</td>
-        </tr>
-      `).join('') : '<tr><td colspan="15" class="empty">No hay registros para esta fecha.</td></tr>';
+  $('reportTableBody').innerHTML=normalized.length
+    ? normalized.map(compactRowHtml).join('')
+    : '<tr><td colspan="6">No hay registros para esta fecha.</td></tr>';
 
-      const agg = aggregateByWorker(records);
-      $('jornadaSummary').innerHTML = agg.length ? agg.map(a => `
-        <div class="summary-card">
-          <h4>${esc(a.workerName)}</h4>
-          <p><strong>Clave:</strong> ${esc(a.code)} · <strong>Cuadrilla:</strong> ${esc(a.team)}</p>
-          <p><strong>Total torres:</strong> ${a.towers}</p>
-          <p><strong>Total hectáreas:</strong> ${fmt2(a.hectares)} ha</p>
-          <p><strong>Total horas:</strong> ${fmt2(a.hours)}</p>
-          <p><strong>Monto:</strong> ${formatCRC(a.amount)}</p>
-          <p><strong>Detalle:</strong> ${esc([...a.details].join(' | ') || '—')}</p>
-        </div>
-      `).join('') : '<div class="empty">Sin resultados para la fecha seleccionada.</div>';
-    }
+  $('reportTableFoot').innerHTML=normalized.length?compactTotalsHtml(report):'';
 
+  return report;
+}
+async function shareReport(){const r=await renderReport(),email=await getSetting(SETTINGS.email,''),body=['Libreta de Control de Cuadrilla',`Fecha: ${r.date}`,'Capataz: Marco Tulio Castillo, capataz deshoja',`Horas: ${humanMinutes(r.mins)}`,`Torres: ${r.towers}`,`Hectáreas: ${fmt2(r.ha)}`,`Monto: ${money(r.amount)}`,'',...r.rows.map(x=>`${x.workerName}: ${humanMinutes(Number(x.minutes??Math.round(Number(x.hours||0)*60)))} · ${x.totalTowers||0} torres · ${fmt2(x.hectares)} ha · ${money(x.amount??Number(x.hectares||0)*TARIFA_HECTAREA)}`)].join('\n');if(navigator.share){try{await navigator.share({title:`Reporte cuadrilla ${r.date}`,text:body});return}catch{}}location.href=`mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent('Reporte cuadrilla '+r.date)}&body=${encodeURIComponent(body)}`}
+function compactExportRows(rows){
+  return rows.map(r=>{
+    const c=compactReportRow(r);
+    const br=v=>esc(String(v)).replace(/\n/g,'<br>');
+    return `<tr>
+      <td>${br(c.worker)}</td>
+      <td>${br(c.schedule)}</td>
+      <td>${br(c.work)}</td>
+      <td>${br(c.towers)}</td>
+      <td>${esc(c.hectares)}</td>
+      <td>${esc(c.amount)}</td>
+    </tr>`;
+  }).join('');
+}
 
-    async function renderReports(){
-      const date = $('reportDate').value || today();
-      $('reportDate').value = date;
-      const rows = (await getAll('records')).filter(r => r.date === date).sort((a,b)=>a.workerName.localeCompare(b.workerName));
-      const currentBlock = await getSetting(SETTINGS.bloque, '');
-      const currentArea = await getSetting(SETTINGS.area, '');
-      const block = rows.length ? (rows[0].block || currentBlock) : currentBlock;
-      const area = rows.length ? (rows[0].supervisionArea ?? currentArea) : currentArea;
-      $('reportBlockText').textContent = block || 'Sin definir';
-      $('reportAreaText').textContent = area !== '' && area !== null ? `${fmt2(area)} ha` : 'Sin definir';
+function compactExportTotal(r){
+  return `<tr class="total">
+    <td>TOTALES<br>${r.workers} trabajador${r.workers===1?'':'es'}</td>
+    <td>${esc(humanMinutes(r.mins))}</td>
+    <td>—</td>
+    <td>${r.towers} torres</td>
+    <td>${fmt2(r.ha)}</td>
+    <td>${esc(money(r.amount))}</td>
+  </tr>`;
+}
 
-      $('reportRows').innerHTML = rows.length ? rows.map(r => `
-        <tr>
-          <td>${esc(r.workerName)}</td><td>${esc(r.code)}</td><td>${esc(r.team)}</td><td>${esc(r.labor)}</td>
-          <td>${esc(r.startTime || '')}</td><td>${esc(r.endTime || '')}</td><td>${fmt2(r.hours || 0)}</td>
-          <td>${esc(r.piece)}</td><td>${esc(r.work)}</td><td>${esc(r.cable)}</td><td>${esc(r.terrain)}</td>
-          <td>${esc(r.towerStart)}</td><td>${esc(r.towerEnd)}</td><td>${esc(r.totalTowers)}</td>
-          <td>${fmt2(r.hectares)}</td><td>${formatCRC(r.amount ?? (Number(r.hectares || 0) * TARIFA_HECTAREA))}</td><td>${esc(r.activity)}</td>
-        </tr>
-      `).join('') : '<tr><td colspan="17" class="empty">No hay registros para la fecha seleccionada.</td></tr>';
+function downloadBlob(content,type,filename){
+  const blob=new Blob(['\ufeff'+content],{type});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=filename;
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),500);
+}
 
-      const agg = aggregateByWorker(rows);
-      $('reportTotals').innerHTML = agg.length ? agg.map(a => `
-        <tr>
-          <td>${esc(a.workerName)}</td><td>${esc(a.code)}</td><td>${esc(a.team)}</td>
-          <td><strong>${fmt2(a.hours)}</strong></td>
-          <td><strong>${a.towers}</strong></td><td><strong>${fmt2(a.hectares)} ha</strong></td>
-          <td><strong>${formatCRC(a.amount)}</strong></td>
-          <td>${esc([...a.details].join(' | ') || '—')}</td>
-        </tr>
-      `).join('') : '<tr><td colspan="8" class="empty">No hay totales para esta fecha.</td></tr>';
-    }
+async function exportWord(){
+  const r=await renderReport();
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+    @page{size:A4 portrait;margin:12mm}
+    body{font-family:Arial,sans-serif;color:#1f2a25;margin:0}
+    h1{font-size:18pt;color:#153f35;margin:0 0 3pt}
+    h2{font-size:10pt;color:#68746f;margin:0 0 9pt;text-transform:uppercase}
+    .meta{font-size:8.5pt;line-height:1.5;margin-bottom:10pt;border-bottom:2px solid #153f35;padding-bottom:7pt}
+    .kpis{width:100%;border-collapse:separate;border-spacing:3pt;margin:7pt 0 10pt}
+    .kpis td{background:#f1f6f3;border:1px solid #dce7e1;padding:6pt;text-align:center}
+    .kpis small{display:block;color:#66736d;font-size:6.5pt;text-transform:uppercase}
+    .kpis strong{display:block;margin-top:2pt;color:#153f35;font-size:9pt}
+    .kpis .totalbox{background:#fff4c5}
+    table.data{width:100%;border-collapse:collapse;table-layout:fixed}
+    table.data th{background:#eaf1ed;color:#314c40;border:1px solid #cad7d0;padding:5pt 3pt;font-size:7pt}
+    table.data td{border:1px solid #d9e2dd;padding:5pt 3pt;vertical-align:top;font-size:7.5pt;line-height:1.3;word-wrap:break-word}
+    table.data th:nth-child(1){width:23%} table.data th:nth-child(2){width:15%}
+    table.data th:nth-child(3){width:22%} table.data th:nth-child(4){width:17%}
+    table.data th:nth-child(5){width:9%} table.data th:nth-child(6){width:14%}
+    .total{font-weight:bold;background:#fff4c5}
+  </style></head><body>
+    <h1>Libreta de Control de Cuadrilla</h1>
+    <h2>Reporte diario</h2>
+    <div class="meta"><strong>Capataz:</strong> Marco Tulio Castillo, capataz deshoja<br>
+      <strong>Bloque:</strong> ${esc(r.block)} &nbsp; · &nbsp;
+      <strong>Área de supervisión:</strong> ${esc(r.area)}<br>
+      <strong>Fecha:</strong> ${esc(r.date)} &nbsp; · &nbsp;
+      <strong>Tarifa:</strong> ₡4.350 por hectárea
+    </div>
+    <table class="kpis"><tr>
+      <td><small>Trabajadores</small><strong>${r.workers}</strong></td>
+      <td><small>Horas</small><strong>${humanMinutes(r.mins)}</strong></td>
+      <td><small>Torres</small><strong>${r.towers}</strong></td>
+      <td><small>Hectáreas</small><strong>${fmt2(r.ha)} ha</strong></td>
+      <td class="totalbox"><small>Monto total</small><strong>${money(r.amount)}</strong></td>
+    </tr></table>
+    <table class="data">
+      <thead><tr><th>Trabajador</th><th>Horario</th><th>Labor / Pieza</th><th>Torres</th><th>Ha</th><th>Monto</th></tr></thead>
+      <tbody>${compactExportRows(r.rows)}</tbody>
+      <tfoot>${compactExportTotal(r)}</tfoot>
+    </table>
+  </body></html>`;
+  downloadBlob(html,'application/msword',`reporte_cuadrilla_${r.date}.doc`);
+}
 
-    async function renderAll(){
-      await renderWorkers();
-      await renderDaily();
-      await renderReports();
-      await loadSettingsIntoUI();
-    }
+async function exportExcel(){
+  const r=await renderReport();
+  // SpreadsheetML/HTML-compatible .xls: same six-column report as PDF and Word.
+  const html=`<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">
+  <head><meta charset="UTF-8"><style>
+    table{border-collapse:collapse;font-family:Arial,sans-serif;font-size:10pt}
+    td,th{border:1px solid #c9d4ce;padding:7px;vertical-align:top}
+    .title{font-size:17pt;font-weight:bold;color:#153f35;border:0}
+    .subtitle{font-size:10pt;font-weight:bold;color:#65736c;border:0}
+    .meta{font-weight:bold;background:#eef4f1}
+    .head{background:#153f35;color:#fff;font-weight:bold;text-align:center}
+    .kpi{background:#eef4f1;font-weight:bold;text-align:center}
+    .money{background:#fff4c5;font-weight:bold}
+    .total{background:#fff4c5;font-weight:bold}
+  </style></head><body><table>
+    <tr><td colspan="6" class="title">Libreta de Control de Cuadrilla</td></tr>
+    <tr><td colspan="6" class="subtitle">Reporte diario</td></tr>
+    <tr><td colspan="6" class="meta">Capataz: Marco Tulio Castillo, capataz deshoja</td></tr>
+    <tr><td colspan="3" class="meta">Fecha: ${esc(r.date)}</td><td colspan="3" class="meta">Bloque: ${esc(r.block)}</td></tr>
+    <tr><td colspan="3" class="meta">Área de supervisión: ${esc(r.area)}</td><td colspan="3" class="meta">Tarifa: ₡4.350/ha</td></tr>
+    <tr>
+      <td class="kpi">Trabajadores<br>${r.workers}</td>
+      <td class="kpi">Horas<br>${esc(humanMinutes(r.mins))}</td>
+      <td class="kpi">Torres<br>${r.towers}</td>
+      <td class="kpi">Hectáreas<br>${fmt2(r.ha)} ha</td>
+      <td colspan="2" class="money">Monto total<br>${esc(money(r.amount))}</td>
+    </tr>
+    <tr><th class="head">Trabajador</th><th class="head">Horario</th><th class="head">Labor / Pieza</th><th class="head">Torres</th><th class="head">Ha</th><th class="head">Monto</th></tr>
+    ${compactExportRows(r.rows)}
+    ${compactExportTotal(r)}
+  </table></body></html>`;
+  downloadBlob(html,'application/vnd.ms-excel',`reporte_cuadrilla_${r.date}.xls`);
+}
 
-    async function loadSettingsIntoUI(){
-      const block = await getSetting(SETTINGS.bloque, '');
-      const area = await getSetting(SETTINGS.area, '');
-      const email = await getSetting(SETTINGS.email, '');
+function switchScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===id));document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.screen===id));window.scrollTo({top:0,behavior:'smooth'});if(id==='screenResumen')renderReport()}
+function updateConnection(){$('onlineBadge').classList.toggle('online',navigator.onLine)}
+document.querySelectorAll('.nav-item').forEach(b=>b.addEventListener('click',()=>switchScreen(b.dataset.screen)));
+['fecha','clave','cuadrilla','pieza','labor','horaInicio','horaFin','torreInicio','torreFin'].forEach(id=>$(id).addEventListener('input',()=>{saveFormDraft();updatePreview()}));
+$('workerSelect').addEventListener('change',async()=>{const id=Number($('workerSelect').value);if(id){const w=(await getAll('workers')).find(x=>x.id===id);if(w){$('clave').value=w.code||DEFAULTS.clave;$('cuadrilla').value=w.team||''}}saveFormDraft();updatePreview()});
+$('fieldForm').addEventListener('submit',e=>{e.preventDefault();const d=currentData();if(!d.workerId)return alert('Seleccione un trabajador.');if(!d.startTime||!d.endTime)return alert('Ingrese hora inicio y hora fin.');if(!d.towerStart||!d.towerEnd)return alert('Seleccione torre inicial y torre final.');const a=drafts();a.push(d);setDrafts(a);resetForm()});
+$('undoLastBtn').addEventListener('click',()=>{const a=drafts();if(a.length){a.pop();setDrafts(a)}});
+$('finalizeBtn').addEventListener('click',()=>{if(confirm('¿Finalizar el reporte del día?'))finalize()});
+$('clearFormBtn').addEventListener('click',()=>{if(confirm('¿Limpiar el formulario actual?'))resetForm()});
+$('refreshPreviewBtn').addEventListener('click',updatePreview);
+$('reportDate').addEventListener('change',renderReport);$('shareReportBtn').addEventListener('click',shareReport);$('printReportBtn').addEventListener('click',()=>window.print());$('wordReportBtn').addEventListener('click',exportWord);$('excelReportBtn').addEventListener('click',exportExcel);
+$('saveSettingsBtn').addEventListener('click',async()=>{await setSetting(SETTINGS.block,$('blockInput').value.trim());await setSetting(SETTINGS.area,$('areaInput').value.trim());await setSetting(SETTINGS.email,$('emailInput').value.trim());await loadSettings();alert('Configuración guardada.')});
+$('addWorkerBtn').addEventListener('click',async()=>{const name=$('workerName').value.trim();if(!name)return alert('Ingrese el nombre del trabajador.');await add('workers',{name,code:$('workerCode').value.trim()||DEFAULTS.clave,team:$('workerTeam').value.trim(),labor:DEFAULTS.labor});$('workerName').value='';$('workerTeam').value='';$('workerCode').value=DEFAULTS.clave;await renderWorkers()});
+$('workerList').addEventListener('click',async e=>{const id=e.target.dataset.deleteWorker;if(id&&confirm('¿Eliminar trabajador?')){await del('workers',id);await renderWorkers()}});
+window.addEventListener('online',updateConnection);window.addEventListener('offline',updateConnection);
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;$('installBtn').hidden=false});
+$('installBtn').addEventListener('click',async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;$('installBtn').hidden=true});
+if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 
-      $('inicioBlockInput').value = block || '';
-      $('supervisionAreaInput').value = area === '' ? '' : area;
-      $('emailInput').value = email || '';
-      $('reportBlockText').textContent = block || 'Sin definir';
-      $('reportAreaText').textContent = area === '' ? 'Sin definir' : `${fmt2(area)} ha`;
-
-      setPersistentFieldState('inicioBlockInput', 'blockEditBtn', Boolean(block));
-      setPersistentFieldState('supervisionAreaInput', 'areaEditBtn', area !== '' && area !== null);
-    }
-
-    function setPersistentFieldState(inputId, buttonId, saved){
-      const input = $(inputId);
-      const button = $(buttonId);
-      input.readOnly = saved;
-      button.textContent = saved ? 'Editar' : 'Guardar';
-      button.classList.toggle('secondary', saved);
-      button.classList.toggle('primary', !saved);
-    }
-
-    async function handlePersistentEdit(inputId, buttonId, settingKey, type='text'){
-      const input = $(inputId);
-      const button = $(buttonId);
-
-      if(input.readOnly){
-        input.readOnly = false;
-        input.focus();
-        button.textContent = 'Guardar';
-        button.classList.remove('secondary');
-        button.classList.add('primary');
-        return;
-      }
-
-      const raw = input.value.trim();
-      if(!raw){
-        alert(type === 'number' ? 'Ingrese el área total de supervisión.' : 'Ingrese el bloque actual.');
-        return;
-      }
-
-      if(type === 'number' && (!Number.isFinite(Number(raw)) || Number(raw) < 0)){
-        alert('Ingrese un área válida.');
-        return;
-      }
-
-      await setSetting(settingKey, type === 'number' ? Number(raw) : raw);
-      await loadSettingsIntoUI();
-      await renderReports();
-      alert(type === 'number'
-        ? 'Área total de supervisión guardada. Permanecerá vigente hasta que sea editada.'
-        : 'Bloque actual guardado. Permanecerá vigente hasta que sea editado.');
-    }
-
-    function buildRowsForDate(rows){
-      return rows.map(r => [
-        r.date,
-        r.block || '',
-        r.supervisionArea ?? '',
-        ENCARGADO_FIJO,
-        r.workerName,
-        r.code,
-        r.team,
-        r.labor,
-        r.startTime || '',
-        r.endTime || '',
-        fmt2(r.hours || 0),
-        r.piece,
-        r.work,
-        r.cable,
-        r.terrain,
-        r.towerStart,
-        r.towerEnd,
-        r.totalTowers,
-        fmt2(r.hectares),
-        Math.round(Number(r.amount ?? (Number(r.hectares || 0) * TARIFA_HECTAREA))),
-        r.activity
-      ]);
-    }
-
-    function buildEmailText(date, block, area, rows){
-      const agg = aggregateByWorker(rows);
-      let text = `Libreta de Control de Cuadrilla
-Fecha: ${date}
-Encargado del bloque: ${ENCARGADO_FIJO}
-Bloque: ${block || 'Sin definir'}
-Área total de supervisión: ${area !== '' && area !== null ? fmt2(area) + ' ha' : 'Sin definir'}
-
-`;
-      text += 'Totales por trabajador:\n';
-      if(!agg.length){
-        text += '- Sin registros para la fecha seleccionada.\n';
-      } else {
-        agg.forEach(a => {
-          text += `- ${a.workerName} | Horas: ${fmt2(a.hours)} | Torres: ${a.towers} | Hectáreas: ${fmt2(a.hectares)} | Monto: ${formatCRC(a.amount)} | Detalle: ${[...a.details].join(' | ')}\n`;
-        });
-      }
-      return text;
-    }
-
-    async function getReportRows(){
-      const date = $('reportDate').value || today();
-      const rows = (await getAll('records')).filter(r => r.date === date).sort((a,b)=>a.workerName.localeCompare(b.workerName));
-      const currentBlock = await getSetting(SETTINGS.bloque, '');
-      const currentArea = await getSetting(SETTINGS.area, '');
-      const block = rows.length ? (rows[0].block || currentBlock) : currentBlock;
-      const area = rows.length ? (rows[0].supervisionArea ?? currentArea) : currentArea;
-      return { date, rows, block, area };
-    }
-
-    async function exportCSV(){
-      const { date, rows } = await getReportRows();
-      const headers = ['Fecha','Bloque','Área total de supervisión (ha)','Encargado del bloque','Trabajador','Clave','Cuadrilla','Labor','Hora inicial','Hora final','Horas','Pieza','Obra','Cable','Terreno','Torre inicial','Torre final','Torres','Hectáreas','Monto CRC','Actividad'];
-      const body = buildRowsForDate(rows);
-      const csv = [headers, ...body]
-        .map(row => row.map(v => `"${String(v ?? '').replaceAll('"','""')}"`).join(','))
-        .join('\n');
-      const blob = new Blob(['\ufeff' + csv], { type:'text/csv;charset=utf-8' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `control_cuadrilla_${date}.csv`;
-      a.click();
-      URL.revokeObjectURL(a.href);
-    }
-
-    async function exportWord(){
-      const { date, rows, block, area } = await getReportRows();
-      const rowHtml = rows.map(r => `
-        <tr>
-          <td>${esc(r.workerName)}</td><td>${esc(r.code)}</td><td>${esc(r.team)}</td><td>${esc(r.labor)}</td>
-          <td>${esc(r.startTime || '')}</td><td>${esc(r.endTime || '')}</td><td>${fmt2(r.hours || 0)}</td>
-          <td>${esc(r.piece)}</td><td>${esc(r.work)}</td><td>${esc(r.cable)}</td><td>${esc(r.terrain)}</td>
-          <td>${esc(r.towerStart)}</td><td>${esc(r.towerEnd)}</td><td>${esc(r.totalTowers)}</td>
-          <td>${fmt2(r.hectares)}</td><td>${formatCRC(r.amount ?? (Number(r.hectares || 0) * TARIFA_HECTAREA))}</td><td>${esc(r.activity)}</td>
-        </tr>`).join('');
-      const doc = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
-        body{font-family:Arial;padding:18px} table{border-collapse:collapse;width:100%}
-        th,td{border:1px solid #999;padding:6px;font-size:10pt;vertical-align:top} h2{margin:0 0 8px}
-        p{margin:0 0 6px}
-      </style></head><body>
-      <h2>Libreta de Control de Cuadrilla</h2>
-      <p><strong>Encargado del bloque:</strong> ${esc(ENCARGADO_FIJO)}</p>
-      <p><strong>Bloque:</strong> ${esc(block || 'Sin definir')}</p>
-      <p><strong>Área total de supervisión:</strong> ${area !== '' && area !== null ? esc(fmt2(area)) + ' ha' : 'Sin definir'}</p>
-      <p><strong>Fecha:</strong> ${esc(date)}</p>
-      <table><tr>
-      <th>Trabajador</th><th>Clave</th><th>Cuadrilla</th><th>Labor</th><th>Hora inicial</th><th>Hora final</th><th>Horas</th><th>Pieza</th><th>Obra</th><th>Cable</th><th>Terreno</th><th>Torre inicial</th><th>Torre final</th><th>Torres</th><th>Hectáreas</th><th>Monto</th><th>Actividad</th>
-      </tr>${rowHtml}</table></body></html>`;
-      const blob = new Blob(['\ufeff' + doc], { type: 'application/msword' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `control_cuadrilla_${date}.doc`;
-      a.click();
-      URL.revokeObjectURL(a.href);
-    }
-
-    async function sendByEmail(){
-      const { date, rows, block, area } = await getReportRows();
-      const to = await getSetting(SETTINGS.email, '');
-      const subject = encodeURIComponent(`Reporte Libreta de Control de Cuadrilla - ${date}`);
-      const body = encodeURIComponent(buildEmailText(date, block, area, rows));
-      const mailto = `mailto:${encodeURIComponent(to)}?subject=${subject}&body=${body}`;
-      if(navigator.share){
-        try{
-          await navigator.share({
-            title: `Reporte de cuadrilla ${date}`,
-            text: buildEmailText(date, block, area, rows)
-          });
-          return;
-        }catch(e){}
-      }
-      window.location.href = mailto;
-    }
-
-    function updateOnlineState(){
-      $('onlineState').textContent = navigator.onLine ? 'En línea' : 'Sin conexión';
-      $('onlineState').className = 'online-state ' + (navigator.onLine ? 'ok' : 'off');
-    }
-
-    document.querySelectorAll('.nav-btn').forEach(btn => btn.addEventListener('click', () => showView(btn.dataset.view)));
-    $('syncBtn').addEventListener('click', () => renderAll());
-    $('jornadaDate').addEventListener('change', renderDaily);
-    $('reportDate').addEventListener('change', renderReports);
-    $('workerSearch').addEventListener('input', renderWorkers);
-    $('workerSelect').addEventListener('change', workerAutofill);
-    $('torreInicial').addEventListener('input', updateComputedResult);
-    $('torreFinal').addEventListener('input', updateComputedResult);
-    $('horaInicio').addEventListener('input', updateComputedResult);
-    $('horaFinal').addEventListener('input', updateComputedResult);
-    $('csvBtn').addEventListener('click', exportCSV);
-    $('wordBtn').addEventListener('click', exportWord);
-    $('printBtn').addEventListener('click', () => window.print());
-    $('emailBtn').addEventListener('click', sendByEmail);
-    $('blockEditBtn').addEventListener('click', () => handlePersistentEdit('inicioBlockInput', 'blockEditBtn', SETTINGS.bloque, 'text'));
-    $('areaEditBtn').addEventListener('click', () => handlePersistentEdit('supervisionAreaInput', 'areaEditBtn', SETTINGS.area, 'number'));
-
-    $('clearWorkerBtn').addEventListener('click', () => {
-      $('workerId').value = '';
-      $('workerForm').reset();
-    });
-
-    $('workerForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const obj = {
-        name: $('workerName').value.trim(),
-        code: $('workerCode').value.trim(),
-        team: $('workerTeam').value.trim(),
-        labor: $('workerLabor').value.trim()
-      };
-      if($('workerId').value) obj.id = Number($('workerId').value);
-      await put('workers', obj);
-      $('workerForm').reset();
-      $('workerId').value = '';
-      await renderAll();
-      alert('Trabajador guardado correctamente.');
-    });
-
-    $('clearRecordBtn').addEventListener('click', () => {
-      $('recordForm').reset();
-      $('fecha').value = today();
-      $('recordId').value = '';
-      $('torresCalc').textContent = '0';
-      $('haCalc').textContent = '0.00';
-      $('horasCalc').textContent = '0.00';
-      $('montoCalc').textContent = '₡0';
-      $('claveAuto').value = '';
-      $('cuadrillaAuto').value = '';
-      $('laborAuto').value = '';
-    });
-
-    $('recordForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const workers = await getAll('workers');
-      const worker = workers.find(w => w.id === Number($('workerSelect').value));
-      if(!worker){ alert('Seleccione un trabajador.'); return; }
-
-      const totalTowers = computeTowers($('torreInicial').value, $('torreFinal').value);
-      const hectares = totalTowers / 10;
-      const hours = computeHours($('horaInicio').value, $('horaFinal').value);
-      const amount = hectares * TARIFA_HECTAREA;
-      const block = await getSetting(SETTINGS.bloque, '');
-      const supervisionArea = await getSetting(SETTINGS.area, '');
-
-      const rec = {
-        date: $('fecha').value,
-        workerId: worker.id,
-        workerName: worker.name,
-        code: worker.code,
-        team: worker.team,
-        labor: $('laborAuto').value.trim(),
-        startTime: $('horaInicio').value,
-        endTime: $('horaFinal').value,
-        hours,
-        piece: $('pieza').value.trim(),
-        work: $('obra').value.trim(),
-        cable: $('cable').value.trim(),
-        terrain: $('terreno').value.trim(),
-        towerStart: $('torreInicial').value.trim(),
-        towerEnd: $('torreFinal').value.trim(),
-        totalTowers,
-        hectares,
-        amount,
-        activity: $('actividad').value.trim(),
-        block,
-        supervisionArea,
-        encargado: ENCARGADO_FIJO,
-        createdAt: new Date().toISOString()
-      };
-
-      if($('recordId').value){
-        rec.id = Number($('recordId').value);
-        await put('records', rec);
-      }else{
-        await add('records', rec);
-      }
-
-      const keepDate = $('fecha').value;
-      $('recordForm').reset();
-      $('fecha').value = keepDate || today();
-      $('torresCalc').textContent = '0';
-      $('haCalc').textContent = '0.00';
-      $('horasCalc').textContent = '0.00';
-      $('montoCalc').textContent = '₡0';
-      $('claveAuto').value = '';
-      $('cuadrillaAuto').value = '';
-      $('laborAuto').value = '';
-      $('recordId').value = '';
-
-      await renderAll();
-      alert('Registro diario guardado correctamente.');
-    });
-
-    $('settingsForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      await setSetting(SETTINGS.email, $('emailInput').value.trim());
-      await loadSettingsIntoUI();
-      alert('Correo de reportes guardado.');
-    });
-
-    window.addEventListener('online', updateOnlineState);
-    window.addEventListener('offline', updateOnlineState);
-
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      $('installBtn').style.display = 'inline-flex';
-    });
-
-    $('installBtn').addEventListener('click', async () => {
-      if(!deferredPrompt) return;
-      deferredPrompt.prompt();
-      await deferredPrompt.userChoice;
-      deferredPrompt = null;
-      $('installBtn').style.display = 'none';
-    });
-
-    if('serviceWorker' in navigator){
-      window.addEventListener('load', async () => {
-        try{ await navigator.serviceWorker.register('./sw.js'); }catch(e){}
-      });
-    }
-
-    (async function init(){
-      await openDB();
-      $('fecha').value = today();
-      $('jornadaDate').value = today();
-      $('reportDate').value = today();
-      updateOnlineState();
-      await renderAll();
-    })();
+(async()=>{await openDB();towerOptions();$('fecha').value=today();$('reportDate').value=today();await renderWorkers();await loadSettings();restoreFormDraft();if(!$('fecha').value)$('fecha').value=today();if(!$('clave').value)$('clave').value=DEFAULTS.clave;if(!$('pieza').value)$('pieza').value=DEFAULTS.pieza;if(!$('labor').value)$('labor').value=DEFAULTS.labor;renderDrafts();updatePreview();updateConnection()})();

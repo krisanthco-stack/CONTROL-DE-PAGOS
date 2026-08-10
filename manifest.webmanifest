@@ -1,11 +1,12 @@
 {
   "name": "Libreta de Control de Cuadrilla",
   "short_name": "Cuadrilla",
-  "description": "Aplicación instalable para control diario de cuadrilla y reportes.",
+  "id": "./",
   "start_url": "./",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#fff9f1",
-  "theme_color": "#0f766e",
+  "background_color": "#f8f5ed",
+  "theme_color": "#153f35",
   "lang": "es",
   "orientation": "portrait-primary",
   "icons": [
@@ -25,13 +26,5 @@
       "type": "image/png",
       "purpose": "maskable"
     }
-  ],
-  "id": "./",
-  "scope": "./",
-  "categories": [
-    "productivity",
-    "business",
-    "utilities"
-  ],
-  "prefer_related_applications": false
+  ]
 }

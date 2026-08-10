@@ -2,354 +2,201 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>Libreta de Control de Cuadrilla</title>
-  <meta name="theme-color" content="#0f766e">
-  <meta name="description" content="Aplicación instalable para control diario de cuadrilla, trabajadores y reportes.">
+  <meta name="theme-color" content="#153f35">
+  <meta name="description" content="Registro móvil offline de cuadrilla, horas, torres y reportes.">
   <meta name="application-name" content="Libreta de Control de Cuadrilla">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="Control Cuadrilla">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Cuadrilla">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icon-192.png">
   <link rel="apple-touch-icon" href="./icon-192.png">
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
-  <div class="app">
-    <aside class="sidebar">
-      <div class="brand">
-        <img src="./logo.svg" alt="Logo">
-        <div>
-          <h1>Libreta de Control de Cuadrilla</h1>
-          <p>Aplicación instalable · uso en campo · control diario por trabajador</p>
-        </div>
+  <div class="phone-shell">
+    <header class="app-header">
+      <div class="brand-row">
+        <img src="./logo.svg" class="app-logo" alt="Logo">
+        <div class="brand-copy"><span class="eyebrow">Control de campo</span><h1>Libreta de Cuadrilla</h1></div>
+        <div id="onlineBadge" class="status-dot"></div>
       </div>
-
-      <div class="fixed-info">
-        <strong>Encargado del bloque</strong><br>
-        Marco Tulio Castillo, capataz deshoja
+      <div class="context-card">
+        <div><span>Capataz</span><strong>Marco Tulio Castillo</strong><small>Capataz deshoja</small></div>
+        <div><span>Bloque</span><strong id="headerBlock">Sin definir</strong><small id="headerArea">Área sin definir</small></div>
       </div>
+    </header>
 
-      <nav class="nav">
-        <button class="nav-btn active" data-view="inicio">👷 Control de bloque</button>
-        <button class="nav-btn" data-view="jornada">📝 Jornada</button>
-        <button class="nav-btn" data-view="reportes">📊 Reportes</button>
-        <button class="nav-btn" data-view="ajustes">⚙️ Ajustes</button>
-      </nav>
+    <main>
+      <section id="screenRegistro" class="screen active">
+        <div class="stepper"><span class="step active">1 Datos</span><span class="step">2 Tiempo</span><span class="step">3 Resumen</span></div>
 
-      <div class="footer">
-        <div>Modo instalable con <strong>manifest + service worker</strong>.</div>
-        <div>Funciona sin conexión después de la primera carga.</div>
-        <div style="margin-top:6px">Versión GitHub 1.1.0</div>
-      </div>
-    </aside>
-
-    <main class="main">
-      <div class="topbar">
-        <div class="page-title">
-          <h2 id="pageTitle">Control de bloque</h2>
-          <p id="pageDesc">Capataz, bloque, área total de supervisión y base de trabajadores.</p>
-        </div>
-        <div class="top-actions">
-          <span class="pill">📶 <span id="onlineState" class="online-state">—</span></span>
-          <button id="installBtn" class="btn warn" style="display:none">Instalar app</button>
-          <button id="syncBtn" class="btn secondary hidden-print">Actualizar vista</button>
-        </div>
-      </div>
-
-      <section id="inicio" class="section active">
-        <div class="card highlight">
-          <div class="badge">Datos vigentes del bloque</div>
-          <h3 style="margin-top:12px">Configuración principal</h3>
-          <div class="sub">El capataz es fijo. El bloque y el área total de supervisión quedan guardados hasta que se editen.</div>
-
-          <div class="field" style="margin-bottom:16px">
-            <label>Capataz / Encargado del bloque</label>
-            <input value="Marco Tulio Castillo, capataz deshoja" readonly>
-          </div>
-
-          <div class="grid equal">
-            <div class="card" style="box-shadow:none;background:#fff">
-              <label>Bloque actual</label>
-              <div style="display:flex;gap:9px;align-items:center;margin-top:7px">
-                <input id="inicioBlockInput" placeholder="Ej. Bloque 1" style="flex:1">
-                <button type="button" id="blockEditBtn" class="btn primary">Guardar</button>
-              </div>
-              <div class="small" style="margin-top:7px">Se mantiene como bloque vigente hasta que pulse Editar.</div>
+        <form id="fieldForm" autocomplete="off">
+          <section class="mobile-card">
+            <div class="section-title">
+              <div><span class="section-number">01</span><h2>Datos básicos</h2></div>
+              <span class="autosave-tag">Borrador automático</span>
             </div>
-
-            <div class="card" style="box-shadow:none;background:#fff">
-              <label>Área total de supervisión (ha)</label>
-              <div style="display:flex;gap:9px;align-items:center;margin-top:7px">
-                <input id="supervisionAreaInput" type="number" min="0" step="0.01" placeholder="Ej. 125.50" style="flex:1">
-                <button type="button" id="areaEditBtn" class="btn primary">Guardar</button>
+            <div class="field-stack">
+              <label class="field"><span>Fecha</span><input id="fecha" type="date" required></label>
+              <label class="field"><span>Trabajador</span><select id="workerSelect" required><option value="">Seleccione trabajador</option></select></label>
+              <div class="two-col">
+                <label class="field"><span>Clave</span><input id="clave" value="5969" inputmode="numeric"></label>
+                <label class="field"><span>Cuadrilla</span><input id="cuadrilla" placeholder="Cuadrilla"></label>
               </div>
-              <div class="small" style="margin-top:7px">Queda definida como área total hasta que pulse Editar.</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="grid two" style="margin-top:18px">
-          <div class="card">
-            <div class="badge">Base de datos local</div>
-            <h3 style="margin-top:12px">Registrar trabajador</h3>
-            <div class="sub">Se registra una sola vez y luego queda disponible en el control diario.</div>
-
-            <form id="workerForm">
-              <input type="hidden" id="workerId">
-              <div class="form-grid">
-                <div class="field full">
-                  <label>Nombre completo *</label>
-                  <input id="workerName" required placeholder="Ej. Juan Pérez Gómez">
-                </div>
-                <div class="field">
-                  <label>Clave *</label>
-                  <input id="workerCode" required placeholder="Ej. 0017">
-                </div>
-                <div class="field">
-                  <label>Cuadrilla *</label>
-                  <input id="workerTeam" required placeholder="Ej. Cuadrilla A">
-                </div>
-                <div class="field full">
-                  <label>Labor base</label>
-                  <input id="workerLabor" placeholder="Ej. Mantenimiento, inspección...">
-                </div>
-              </div>
-              <div class="actions">
-                <button type="button" id="clearWorkerBtn" class="btn secondary">Limpiar</button>
-                <button type="submit" class="btn primary">Guardar trabajador</button>
-              </div>
-            </form>
-          </div>
-
-          <div class="card">
-            <div class="toolbar">
-              <div>
-                <div class="badge">Personal registrado</div>
-                <h3 style="margin-top:10px">Trabajadores</h3>
-                <div class="sub" style="margin:4px 0 0">Base disponible para seleccionar en Jornada.</div>
-              </div>
-              <div class="group">
-                <input id="workerSearch" placeholder="Buscar trabajador">
+              <div class="two-col">
+                <label class="field"><span>Pieza</span><input id="pieza" value="4350" inputmode="numeric"></label>
+                <label class="field"><span>Labor</span><input id="labor" value="Deshoja"></label>
               </div>
             </div>
-            <div id="workerList" class="worker-list"></div>
+          </section>
+
+          <section class="mobile-card">
+            <div class="section-title"><div><span class="section-number">02</span><h2>Tiempos y torres</h2></div></div>
+            <div class="two-col">
+              <label class="field"><span>Hora inicio</span><input id="horaInicio" type="time" required autocomplete="off"><small>Editable antes de guardar</small></label>
+              <label class="field"><span>Hora fin</span><input id="horaFin" type="time" required autocomplete="off"><small>Editable antes de guardar</small></label>
+            </div>
+            <div class="metric-card primary-metric">
+              <span>Tiempo laborado</span><strong id="hoursHuman">0 h 00 min</strong><small id="hoursDecimal">0.00 horas</small>
+            </div>
+            <div class="two-col">
+              <label class="field"><span>Torre inicial</span><select id="torreInicio"></select></label>
+              <label class="field"><span>Torre final</span><select id="torreFin"></select></label>
+            </div>
+            <div class="metric-grid">
+              <div class="metric-card"><span>Torres</span><strong id="towerCount">0</strong></div>
+              <div class="metric-card"><span>Hectáreas</span><strong id="hectares">0.00</strong><small>10 torres = 1 ha</small></div>
+              <div class="metric-card"><span>Monto</span><strong id="amount">₡0</strong><small>₡4.350 / ha</small></div>
+            </div>
+          </section>
+
+          <section class="mobile-card preview-card">
+            <div class="section-title">
+              <div><span class="section-number">03</span><h2>Vista previa</h2></div>
+              <button id="refreshPreviewBtn" type="button" class="text-button">Actualizar</button>
+            </div>
+            <div class="preview-grid">
+              <div><span>Labor</span><strong id="previewLabor">Deshoja</strong></div>
+              <div><span>Pieza</span><strong id="previewPiece">4350</strong></div>
+              <div><span>Horas</span><strong id="previewHours">0 h 00 min</strong></div>
+              <div><span>Torres</span><strong id="previewTowers">—</strong></div>
+              <div><span>Hectáreas</span><strong id="previewHa">0.00 ha</strong></div>
+              <div><span>Monto</span><strong id="previewAmount">₡0</strong></div>
+            </div>
+          </section>
+
+          <div class="form-actions">
+            <button id="clearFormBtn" class="btn secondary" type="button">Limpiar formulario</button>
+            <button class="btn primary" type="submit">Guardar entrada</button>
           </div>
-        </div>
+        </form>
+
+        <section class="mobile-card session-card">
+          <div class="section-title">
+            <div><span class="section-number">04</span><h2>Jornada en borrador</h2></div>
+            <span id="draftCount" class="count-badge">0</span>
+          </div>
+          <div id="draftEntries" class="entry-list"><div class="empty-state">Todavía no hay entradas guardadas.</div></div>
+          <div class="draft-summary">
+            <div><span>Horas</span><strong id="draftHours">0 h 00 min</strong></div>
+            <div><span>Hectáreas</span><strong id="draftHa">0.00 ha</strong></div>
+            <div><span>Monto</span><strong id="draftAmount">₡0</strong></div>
+          </div>
+          <div class="danger-zone">
+            <button id="undoLastBtn" type="button" class="btn undo" disabled>↶ Deshacer último registro</button>
+            <button id="finalizeBtn" type="button" class="btn finalize" disabled>Finalizar reporte del día</button>
+          </div>
+        </section>
       </section>
 
-      <section id="jornada" class="section">
-        <div class="grid two">
-          <div class="card">
-            <div class="badge">Registro en campo</div>
-            <h3 style="margin-top:12px">Nueva actividad diaria</h3>
-            <div class="sub">Seleccione el trabajador; los datos base se llenan automáticamente.</div>
-            <form id="recordForm">
-              <input type="hidden" id="recordId">
-              <div class="form-grid">
-                <div class="field">
-                  <label>Fecha *</label>
-                  <input id="fecha" type="date" required>
-                </div>
-                <div class="field">
-                  <label>Trabajador *</label>
-                  <select id="workerSelect" required><option value="">Seleccione…</option></select>
-                </div>
-                <div class="field">
-                  <label>Hora inicial *</label>
-                  <input id="horaInicio" type="time" required>
-                </div>
-                <div class="field">
-                  <label>Hora final *</label>
-                  <input id="horaFinal" type="time" required>
-                </div>
-                <div class="field">
-                  <label>Clave</label>
-                  <input id="claveAuto" readonly>
-                </div>
-                <div class="field">
-                  <label>Cuadrilla</label>
-                  <input id="cuadrillaAuto" readonly>
-                </div>
-                <div class="field full">
-                  <label>Labor</label>
-                  <input id="laborAuto" placeholder="Se puede ajustar para esta jornada">
-                </div>
-
-                <div class="field">
-                  <label>Pieza</label>
-                  <input id="pieza" placeholder="Ej. P-07">
-                </div>
-                <div class="field">
-                  <label>Obra</label>
-                  <input id="obra" placeholder="Ej. Obra Norte">
-                </div>
-                <div class="field">
-                  <label>Cable</label>
-                  <input id="cable" placeholder="Ej. CB-02">
-                </div>
-                <div class="field">
-                  <label>Terreno</label>
-                  <input id="terreno" placeholder="Ej. Ladera 1">
-                </div>
-                <div class="field">
-                  <label>Torre inicial</label>
-                  <input id="torreInicial" placeholder="Ej. A1 / T-101">
-                </div>
-                <div class="field">
-                  <label>Torre final</label>
-                  <input id="torreFinal" placeholder="Ej. A10 / T-110">
-                </div>
-                <div class="field full">
-                  <label>¿Qué hizo ahí? *</label>
-                  <textarea id="actividad" required placeholder="Describa la actividad realizada por el trabajador"></textarea>
-                </div>
-              </div>
-
-              <div class="quick-result" style="margin-top:14px;grid-template-columns:repeat(4,1fr)">
-                <div class="kpi"><span>Total de torres realizadas</span><b id="torresCalc">0</b></div>
-                <div class="kpi"><span>Hectáreas equivalentes (10 torres = 1 ha)</span><b id="haCalc">0.00</b></div>
-                <div class="kpi"><span>Horas trabajadas</span><b id="horasCalc">0.00</b></div>
-                <div class="kpi"><span>Monto (₡4.350/ha)</span><b id="montoCalc">₡0</b></div>
-              </div>
-
-              <div class="actions">
-                <button type="button" id="clearRecordBtn" class="btn secondary">Limpiar</button>
-                <button type="submit" class="btn primary">Guardar registro</button>
-              </div>
-            </form>
-          </div>
-
-          <div class="card">
-            <div class="badge">Resumen de jornada</div>
-            <h3 style="margin-top:12px">Resultado del día por trabajador</h3>
-            <div class="sub">Totales calculados con base en los registros de la fecha seleccionada.</div>
-            <div class="field" style="margin-bottom:14px">
-              <label>Fecha consultada</label>
-              <input id="jornadaDate" type="date">
-            </div>
-            <div id="jornadaSummary" class="summary-cards"></div>
-          </div>
-        </div>
-
-        <div class="card" style="margin-top:18px">
-          <h3>Registros del día</h3>
-          <div class="sub">Vista detallada de las actividades registradas en la jornada.</div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Fecha</th><th>Bloque</th><th>Trabajador</th><th>Clave</th><th>Cuadrilla</th><th>Labor</th>
-                  <th>Hora inicial</th><th>Hora final</th><th>Horas</th><th>Torre inicial</th><th>Torre final</th>
-                  <th>Torres</th><th>Hectáreas</th><th>Monto</th><th>Actividad</th>
-                </tr>
-              </thead>
-              <tbody id="recordsTable"></tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <section id="reportes" class="section">
-        <div class="card">
-          <div class="toolbar">
+      <section id="screenResumen" class="screen">
+        <section id="printableReport" class="mobile-card report-sheet">
+          <div class="report-head">
             <div>
-              <div class="badge">Descargas y envío</div>
-              <h3 style="margin-top:10px">Reporte final</h3>
-              <div class="sub" style="margin:4px 0 0">Exportar en PDF, Word o Excel/CSV, y enviar resumen por correo.</div>
+              <span class="report-kicker">Libreta de Control de Cuadrilla</span>
+              <h2>Reporte diario</h2>
+              <div id="reportContext" class="report-context"></div>
             </div>
-            <div class="group">
-              <input id="reportDate" type="date">
-              <button id="printBtn" class="btn secondary">PDF / Imprimir</button>
-              <button id="wordBtn" class="btn secondary">Word</button>
-              <button id="csvBtn" class="btn secondary">Excel / CSV</button>
-              <button id="emailBtn" class="btn primary">Enviar por correo</button>
-            </div>
+            <input id="reportDate" type="date" class="date-compact no-print">
           </div>
 
-          <div id="reportHeader" style="margin-bottom:16px">
-            <h3 style="margin-bottom:8px">Libreta de Control de Cuadrilla</h3>
-            <div style="font-size:13px;font-weight:800;margin-bottom:4px">Encargado del bloque: Marco Tulio Castillo, capataz deshoja</div>
-            <div style="font-size:13px;font-weight:800;margin-bottom:4px">Bloque: <span id="reportBlockText">Sin definir</span></div>
-            <div style="font-size:13px;font-weight:800;margin-bottom:4px">Área total de supervisión: <span id="reportAreaText">Sin definir</span></div>
-            <div style="font-size:13px;font-weight:800;margin-bottom:4px">Tarifa: ₡4.350 por hectárea</div>
-            <div class="sub" style="margin-bottom:0">Reporte de actividades por día</div>
+          <div class="report-kpis">
+            <div><span>Trabajadores</span><strong id="reportWorkers">0</strong></div>
+            <div><span>Horas</span><strong id="reportHours">0 h 00 min</strong></div>
+            <div><span>Torres</span><strong id="reportTowers">0</strong></div>
+            <div><span>Hectáreas</span><strong id="reportHa">0.00 ha</strong></div>
+            <div class="wide-kpi"><span>Monto total</span><strong id="reportAmount">₡0</strong></div>
           </div>
 
-          <div class="table-wrap">
-            <table>
+          <div class="report-table-wrap">
+            <table class="report-table">
               <thead>
                 <tr>
-                  <th>Trabajador</th><th>Clave</th><th>Cuadrilla</th><th>Labor</th><th>Hora inicial</th><th>Hora final</th><th>Horas</th>
-                  <th>Pieza</th><th>Obra</th><th>Cable</th><th>Terreno</th><th>Torre inicial</th><th>Torre final</th>
-                  <th>Torres</th><th>Hectáreas</th><th>Monto</th><th>Actividad</th>
+                  <th>Trabajador</th>
+                  <th>Horario</th>
+                  <th>Labor / Pieza</th>
+                  <th>Torres</th>
+                  <th>Ha</th>
+                  <th>Monto</th>
                 </tr>
               </thead>
-              <tbody id="reportRows"></tbody>
+              <tbody id="reportTableBody"></tbody>
+              <tfoot id="reportTableFoot"></tfoot>
             </table>
           </div>
 
-          <h3 style="margin-top:22px">Totales por trabajador</h3>
-          <div class="sub">Conteo total de torres y hectáreas al final del reporte.</div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr><th>Trabajador</th><th>Clave</th><th>Cuadrilla</th><th>Total horas</th><th>Total torres</th><th>Total hectáreas</th><th>Monto total</th><th>Detalle</th></tr>
-              </thead>
-              <tbody id="reportTotals"></tbody>
-            </table>
-          </div>
+          <div id="reportList" class="entry-list report-cards-mobile"></div>
 
-          <div class="note hidden-print" style="margin-top:14px">
-            En esta versión de prueba el botón de correo abre el cliente de correo del dispositivo con el resumen del reporte. 
-            Si desea envío automático real desde un servidor, en la versión GitHub final se puede conectar a una pasarela o backend.
+          <div class="stack-actions no-print">
+            <button id="shareReportBtn" type="button" class="btn primary">Compartir / correo</button>
+            <button id="printReportBtn" type="button" class="btn secondary">PDF / imprimir</button>
+            <button id="wordReportBtn" type="button" class="btn secondary">Word</button>
+            <button id="excelReportBtn" type="button" class="btn secondary">Excel</button>
           </div>
-        </div>
+        </section>
       </section>
 
-      <section id="ajustes" class="section">
-        <div class="grid equal">
-          <div class="card">
-            <div class="badge">Configuración de salida</div>
-            <h3 style="margin-top:12px">Correo de reportes</h3>
-            <div class="sub">El bloque y el área de supervisión se administran desde Control de bloque.</div>
-            <form id="settingsForm">
-              <div class="form-grid">
-                <div class="field full">
-                  <label>Correo destino del reporte</label>
-                  <input id="emailInput" type="email" placeholder="ejemplo@correo.com">
-                </div>
-              </div>
-              <div class="actions">
-                <button type="submit" class="btn primary">Guardar correo</button>
-              </div>
-            </form>
+      <section id="screenAjustes" class="screen">
+        <section class="mobile-card">
+          <div class="section-title"><div><span class="section-number">⚙</span><h2>Configuración</h2></div></div>
+          <div class="field-stack">
+            <label class="field"><span>Bloque actual</span><input id="blockInput" placeholder="Ej. Bloque 4"></label>
+            <label class="field"><span>Área total de supervisión (ha)</span><input id="areaInput" type="number" min="0" step="0.01" inputmode="decimal"></label>
+            <label class="field"><span>Correo de reportes</span><input id="emailInput" type="email" inputmode="email"></label>
+            <button id="saveSettingsBtn" type="button" class="btn primary">Guardar configuración</button>
           </div>
+        </section>
 
-          <div class="card">
-            <h3>Instalable y sin conexión</h3>
-            <div class="sub">Esta prueba está pensada para teléfonos, tablets, computadoras y trabajo offline.</div>
-            <ul style="margin:0;padding-left:18px;line-height:1.7;color:#4d5f6c">
-              <li>Diseño adaptable para móvil y escritorio.</li>
-              <li>Datos locales con IndexedDB.</li>
-              <li>Instalable como aplicación PWA.</li>
-              <li>Service worker para abrir sin conexión luego de la primera carga.</li>
-              <li>Lista para subir a GitHub Pages.</li>
-            </ul>
+        <section class="mobile-card">
+          <div class="section-title"><div><span class="section-number">👷</span><h2>Trabajadores</h2></div></div>
+          <div class="field-stack">
+            <label class="field"><span>Nombre</span><input id="workerName" placeholder="Nombre del trabajador"></label>
+            <div class="two-col">
+              <label class="field"><span>Clave</span><input id="workerCode" value="5969"></label>
+              <label class="field"><span>Cuadrilla</span><input id="workerTeam" placeholder="Cuadrilla"></label>
+            </div>
+            <button id="addWorkerBtn" type="button" class="btn primary">Agregar trabajador</button>
           </div>
-        </div>
+          <div id="workerList" class="worker-list"></div>
+        </section>
+
+        <section class="mobile-card install-card">
+          <h2>Aplicación instalable</h2>
+          <p>Después de abrirla una vez con internet, puede seguir funcionando sin conexión.</p>
+          <button id="installBtn" class="btn install" type="button" hidden>Instalar en este teléfono</button>
+        </section>
       </section>
     </main>
+
+    <nav class="bottom-nav">
+      <button class="nav-item active" data-screen="screenRegistro"><span>✎</span><small>Registro</small></button>
+      <button class="nav-item" data-screen="screenResumen"><span>▤</span><small>Reporte</small></button>
+      <button class="nav-item" data-screen="screenAjustes"><span>⚙</span><small>Ajustes</small></button>
+    </nav>
   </div>
-
-  <nav class="mobile-nav" style="grid-template-columns:repeat(4,1fr)">
-    <button class="nav-btn active" data-view="inicio">Bloque</button>
-    <button class="nav-btn" data-view="jornada">Jornada</button>
-    <button class="nav-btn" data-view="reportes">Reportes</button>
-    <button class="nav-btn" data-view="ajustes">Ajustes</button>
-  </nav>
-
   <script src="./app.js"></script>
 </body>
 </html>
