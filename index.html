@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Libreta de Control de Cuadrilla</title>
+  <meta name="theme-color" content="#0f766e">
+  <meta name="description" content="Aplicación instalable para control diario de cuadrilla, trabajadores y reportes.">
+  <meta name="application-name" content="Libreta de Control de Cuadrilla">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Control Cuadrilla">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icon-192.png">
+  <link rel="apple-touch-icon" href="./icon-192.png">
+  <style>
+    :root{
+      --bg:#fff9f1;
+      --panel:#ffffff;
+      --text:#21313a;
+      --muted:#677885;
+      --line:#e6edf0;
+      --brand:#0f766e;
+      --brand-2:#f59e0b;
+      --brand-3:#22577a;
+      --soft:#eef9f8;
+      --soft-2:#fff4df;
+      --danger:#b42318;
+      --success:#0e9f6e;
+      --shadow:0 16px 40px rgba(31,41,55,.08);
+      --radius:20px;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;font-family:Inter,Arial,Helvetica,sans-serif;background:linear-gradient(180deg,#fff9f1 0%, #f4faf9 100%);color:var(--text)}
+    button,input,select,textarea{font:inherit}
+    .app{min-height:100vh;display:grid;grid-template-columns:290px 1fr}
+    .sidebar{
+      background:linear-gradient(180deg,#0f766e 0%, #22577a 100%);
+      color:#fff;padding:22px 18px 18px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:18px
+    }
+    .brand{display:flex;gap:12px;align-items:center}
+    .brand img{width:56px;height:56px;border-radius:16px;background:#fff;padding:5px;box-shadow:0 10px 25px rgba(0,0,0,.14)}
+    .brand h1{font-size:18px;margin:0}
+    .brand p{margin:4px 0 0;color:#d5f3ef;font-size:13px;line-height:1.35}
+    .fixed-info{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.14);padding:12px;border-radius:16px;font-size:13px;line-height:1.45}
+    .nav{display:grid;gap:8px}
+    .nav button{
+      border:0;border-radius:14px;padding:13px 14px;text-align:left;background:transparent;color:#eaf9f7;cursor:pointer;font-weight:700;
+      display:flex;align-items:center;gap:10px
+    }
+    .nav button.active,.nav button:hover{background:rgba(255,255,255,.14)}
+    .sidebar .footer{margin-top:auto;font-size:12px;color:#cbe8e3;line-height:1.45}
+    .main{padding:22px}
+    .topbar{display:flex;gap:16px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;margin-bottom:18px}
+    .page-title h2{margin:0 0 6px;font-size:30px}
+    .page-title p{margin:0;color:var(--muted)}
+    .top-actions{display:flex;gap:10px;flex-wrap:wrap}
+    .pill{border:1px solid var(--line);background:#fff;border-radius:999px;padding:10px 14px;font-size:13px;color:var(--brand-3);font-weight:700}
+    .btn{
+      border:0;border-radius:14px;padding:11px 15px;cursor:pointer;font-weight:800;transition:.18s transform ease,.18s filter ease
+    }
+    .btn:hover{transform:translateY(-1px);filter:brightness(.98)}
+    .btn.primary{background:var(--brand);color:#fff}
+    .btn.secondary{background:#fff;border:1px solid var(--line);color:var(--brand-3)}
+    .btn.warn{background:var(--brand-2);color:#fff}
+    .btn.danger{background:#fff0f0;color:var(--danger);border:1px solid #f2c7c7}
+    .grid{display:grid;gap:18px}
+    .grid.two{grid-template-columns:1.2fr .8fr}
+    .grid.equal{grid-template-columns:1fr 1fr}
+    .grid.stats{grid-template-columns:repeat(4,1fr)}
+    .card{
+      background:var(--panel);border:1px solid rgba(227,234,239,.9);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px
+    }
+    .card h3{margin:0 0 6px;font-size:18px}
+    .sub{font-size:13px;color:var(--muted);margin-bottom:14px}
+    .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+    .field{display:flex;flex-direction:column;gap:6px}
+    .field.full{grid-column:1/-1}
+    label{font-size:12px;font-weight:800;color:#586a78}
+    input,select,textarea{
+      width:100%;padding:12px 13px;border:1px solid #d8e2e7;border-radius:14px;background:#fff;outline:none
+    }
+    input:focus,select:focus,textarea:focus{border-color:var(--brand);box-shadow:0 0 0 4px rgba(15,118,110,.08)}
+    input[readonly]{background:#f8fbfb;color:#60737b}
+    textarea{min-height:92px;resize:vertical}
+    .actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;margin-top:14px}
+    .kpi{
+      padding:16px;border-radius:18px;border:1px solid var(--line);background:linear-gradient(180deg,#ffffff 0%, #f9fcfc 100%)
+    }
+    .kpi span{font-size:12px;color:var(--muted)}
+    .kpi b{display:block;font-size:28px;margin-top:5px;color:var(--brand-3)}
+    .badge{
+      display:inline-flex;align-items:center;gap:6px;background:var(--soft);color:var(--brand);padding:7px 10px;border-radius:999px;font-size:12px;font-weight:800
+    }
+    .highlight{background:linear-gradient(135deg,var(--soft) 0%, #fff 100%);border:1px dashed #abd7d1}
+    .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:18px}
+    table{width:100%;border-collapse:collapse;min-width:900px;background:#fff}
+    th,td{padding:11px 12px;border-bottom:1px solid var(--line);text-align:left;font-size:13px;vertical-align:top}
+    th{background:#f5faf9;color:#55707b;font-size:12px;position:sticky;top:0}
+    tr:last-child td{border-bottom:0}
+    .empty{padding:24px;text-align:center;color:var(--muted)}
+    .worker-list{display:grid;gap:12px}
+    .worker-item{
+      display:flex;justify-content:space-between;gap:14px;align-items:center;padding:14px;border:1px solid var(--line);border-radius:16px;background:#fff
+    }
+    .worker-item h4{margin:0 0 4px}
+    .worker-item p{margin:0;color:var(--muted);font-size:13px}
+    .mini-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .summary-cards{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+    .summary-card{border:1px solid var(--line);border-radius:18px;padding:14px;background:linear-gradient(180deg,#fff 0%, #fffcf6 100%)}
+    .summary-card h4{margin:0 0 6px;font-size:16px}
+    .summary-card p{margin:4px 0;font-size:13px;color:#546775}
+    .quick-result{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .quick-result .kpi{background:linear-gradient(180deg,var(--soft-2) 0%, #fff 100%)}
+    .section{display:none}
+    .section.active{display:block}
+    .toolbar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:14px}
+    .toolbar .group{display:flex;gap:10px;flex-wrap:wrap}
+    .note{
+      padding:12px 14px;border-radius:14px;background:#fff9e8;border:1px solid #f3dfac;color:#765f20;font-size:13px
+    }
+    .online-state{font-size:12px;font-weight:800}
+    .ok{color:var(--success)} .off{color:var(--danger)}
+    .mobile-nav{display:none}
+    .hidden-print{display:block}
+    .show-install{display:none}
+    @media (max-width: 1080px){
+      .grid.two,.grid.equal{grid-template-columns:1fr}
+      .grid.stats{grid-template-columns:1fr 1fr}
+    }
+    @media (max-width: 880px){
+      .app{grid-template-columns:1fr}
+      .sidebar{display:none}
+      .main{padding:16px 16px 90px}
+      .mobile-nav{
+        display:grid;grid-template-columns:repeat(4,1fr);gap:8px;position:fixed;left:10px;right:10px;bottom:10px;
+        background:#fff;border:1px solid var(--line);border-radius:20px;padding:8px;box-shadow:var(--shadow);z-index:30
+      }
+      .mobile-nav button{border:0;background:transparent;border-radius:14px;padding:10px 8px;font-size:12px;font-weight:800;color:#41606a}
+      .mobile-nav button.active{background:var(--soft);color:var(--brand)}
+    }
+    @media (max-width: 640px){
+      .grid.stats{grid-template-columns:1fr}
+      .form-grid{grid-template-columns:1fr}
+      .field.full{grid-column:auto}
+      .page-title h2{font-size:24px}
+      .quick-result{grid-template-columns:1fr}
+    }
+    @media print{
+      .sidebar,.mobile-nav,.top-actions,.toolbar,.actions,.hidden-print,.btn,.note{display:none !important}
+      .app{display:block}
+      .section{display:none !important}
+      #reportes{display:block !important}
+      .card{box-shadow:none}
+      body{background:#fff}
+      .main{padding:0}
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <img src="./logo.svg" alt="Logo">
+        <div>
+          <h1>Libreta de Control de Cuadrilla</h1>
+          <p>Aplicación instalable · uso en campo · control diario por trabajador</p>
+        </div>
+      </div>
+
+      <div class="fixed-info">
+        <strong>Encargado del bloque</strong><br>
+        Marco Tulio Castillo, capataz deshoja
+      </div>
+
+      <nav class="nav">
+        <button class="nav-btn active" data-view="inicio">👷 Control de bloque</button>
+        <button class="nav-btn" data-view="jornada">📝 Jornada</button>
+        <button class="nav-btn" data-view="reportes">📊 Reportes</button>
+        <button class="nav-btn" data-view="ajustes">⚙️ Ajustes</button>
+      </nav>
+
+      <div class="footer">
+        <div>Modo instalable con <strong>manifest + service worker</strong>.</div>
+        <div>Funciona sin conexión después de la primera carga.</div>
+        <div style="margin-top:6px">Versión GitHub 1.0.0</div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div class="page-title">
+          <h2 id="pageTitle">Control de bloque</h2>
+          <p id="pageDesc">Capataz, bloque, área total de supervisión y base de trabajadores.</p>
+        </div>
+        <div class="top-actions">
+          <span class="pill">📶 <span id="onlineState" class="online-state">—</span></span>
+          <button id="installBtn" class="btn warn show-install">Instalar app</button>
+          <button id="syncBtn" class="btn secondary hidden-print">Actualizar vista</button>
+        </div>
+      </div>
+
+      <section id="inicio" class="section active">
+        <div class="card highlight">
+          <div class="badge">Datos vigentes del bloque</div>
+          <h3 style="margin-top:12px">Configuración principal</h3>
+          <div class="sub">El capataz es fijo. El bloque y el área total de supervisión quedan guardados hasta que se editen.</div>
+
+          <div class="field" style="margin-bottom:16px">
+            <label>Capataz / Encargado del bloque</label>
+            <input value="Marco Tulio Castillo, capataz deshoja" readonly>
+          </div>
+
+          <div class="grid equal">
+            <div class="card" style="box-shadow:none;background:#fff">
+              <label>Bloque actual</label>
+              <div style="display:flex;gap:9px;align-items:center;margin-top:7px">
+                <input id="inicioBlockInput" placeholder="Ej. Bloque 1" style="flex:1">
+                <button type="button" id="blockEditBtn" class="btn primary">Guardar</button>
+              </div>
+              <div class="small" style="margin-top:7px">Se mantiene como bloque vigente hasta que pulse Editar.</div>
+            </div>
+
+            <div class="card" style="box-shadow:none;background:#fff">
+              <label>Área total de supervisión (ha)</label>
+              <div style="display:flex;gap:9px;align-items:center;margin-top:7px">
+                <input id="supervisionAreaInput" type="number" min="0" step="0.01" placeholder="Ej. 125.50" style="flex:1">
+                <button type="button" id="areaEditBtn" class="btn primary">Guardar</button>
+              </div>
+              <div class="small" style="margin-top:7px">Queda definida como área total hasta que pulse Editar.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid two" style="margin-top:18px">
+          <div class="card">
+            <div class="badge">Base de datos local</div>
+            <h3 style="margin-top:12px">Registrar trabajador</h3>
+            <div class="sub">Se registra una sola vez y luego queda disponible en el control diario.</div>
+
+            <form id="workerForm">
+              <input type="hidden" id="workerId">
+              <div class="form-grid">
+                <div class="field full">
+                  <label>Nombre completo *</label>
+                  <input id="workerName" required placeholder="Ej. Juan Pérez Gómez">
+                </div>
+                <div class="field">
+                  <label>Clave *</label>
+                  <input id="workerCode" required placeholder="Ej. 0017">
+                </div>
+                <div class="field">
+                  <label>Cuadrilla *</label>
+                  <input id="workerTeam" required placeholder="Ej. Cuadrilla A">
+                </div>
+                <div class="field full">
+                  <label>Labor base</label>
+                  <input id="workerLabor" placeholder="Ej. Mantenimiento, inspección...">
+                </div>
+              </div>
+              <div class="actions">
+                <button type="button" id="clearWorkerBtn" class="btn secondary">Limpiar</button>
+                <button type="submit" class="btn primary">Guardar trabajador</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="card">
+            <div class="toolbar">
+              <div>
+                <div class="badge">Personal registrado</div>
+                <h3 style="margin-top:10px">Trabajadores</h3>
+                <div class="sub" style="margin:4px 0 0">Base disponible para seleccionar en Jornada.</div>
+              </div>
+              <div class="group">
+                <input id="workerSearch" placeholder="Buscar trabajador">
+              </div>
+            </div>
+            <div id="workerList" class="worker-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="jornada" class="section">
+        <div class="grid two">
+          <div class="card">
+            <div class="badge">Registro en campo</div>
+            <h3 style="margin-top:12px">Nueva actividad diaria</h3>
+            <div class="sub">Seleccione el trabajador; los datos base se llenan automáticamente.</div>
+            <form id="recordForm">
+              <input type="hidden" id="recordId">
+              <div class="form-grid">
+                <div class="field">
+                  <label>Fecha *</label>
+                  <input id="fecha" type="date" required>
+                </div>
+                <div class="field">
+                  <label>Trabajador *</label>
+                  <select id="workerSelect" required><option value="">Seleccione…</option></select>
+                </div>
+                <div class="field">
+                  <label>Clave</label>
+                  <input id="claveAuto" readonly>
+                </div>
+                <div class="field">
+                  <label>Cuadrilla</label>
+                  <input id="cuadrillaAuto" readonly>
+                </div>
+                <div class="field full">
+                  <label>Labor</label>
+                  <input id="laborAuto" placeholder="Se puede ajustar para esta jornada">
+                </div>
+
+                <div class="field">
+                  <label>Pieza</label>
+                  <input id="pieza" placeholder="Ej. P-07">
+                </div>
+                <div class="field">
+                  <label>Obra</label>
+                  <input id="obra" placeholder="Ej. Obra Norte">
+                </div>
+                <div class="field">
+                  <label>Cable</label>
+                  <input id="cable" placeholder="Ej. CB-02">
+                </div>
+                <div class="field">
+                  <label>Terreno</label>
+                  <input id="terreno" placeholder="Ej. Ladera 1">
+                </div>
+                <div class="field">
+                  <label>Torre inicial</label>
+                  <input id="torreInicial" placeholder="Ej. A1 / T-101">
+                </div>
+                <div class="field">
+                  <label>Torre final</label>
+                  <input id="torreFinal" placeholder="Ej. A10 / T-110">
+                </div>
+                <div class="field full">
+                  <label>¿Qué hizo ahí? *</label>
+                  <textarea id="actividad" required placeholder="Describa la actividad realizada por el trabajador"></textarea>
+                </div>
+              </div>
+
+              <div class="quick-result" style="margin-top:14px">
+                <div class="kpi"><span>Total de torres realizadas</span><b id="torresCalc">0</b></div>
+                <div class="kpi"><span>Hectáreas equivalentes (10 torres = 1 ha)</span><b id="haCalc">0.00</b></div>
+              </div>
+
+              <div class="actions">
+                <button type="button" id="clearRecordBtn" class="btn secondary">Limpiar</button>
+                <button type="submit" class="btn primary">Guardar registro</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="card">
+            <div class="badge">Resumen de jornada</div>
+            <h3 style="margin-top:12px">Resultado del día por trabajador</h3>
+            <div class="sub">Totales calculados con base en los registros de la fecha seleccionada.</div>
+            <div class="field" style="margin-bottom:14px">
+              <label>Fecha consultada</label>
+              <input id="jornadaDate" type="date">
+            </div>
+            <div id="jornadaSummary" class="summary-cards"></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:18px">
+          <h3>Registros del día</h3>
+          <div class="sub">Vista detallada de las actividades registradas en la jornada.</div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha</th><th>Bloque</th><th>Trabajador</th><th>Clave</th><th>Cuadrilla</th><th>Labor</th>
+                  <th>Torre inicial</th><th>Torre final</th><th>Torres</th><th>Hectáreas</th><th>Actividad</th>
+                </tr>
+              </thead>
+              <tbody id="recordsTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="reportes" class="section">
+        <div class="card">
+          <div class="toolbar">
+            <div>
+              <div class="badge">Descargas y envío</div>
+              <h3 style="margin-top:10px">Reporte final</h3>
+              <div class="sub" style="margin:4px 0 0">Exportar en PDF, Word o Excel/CSV, y enviar resumen por correo.</div>
+            </div>
+            <div class="group">
+              <input id="reportDate" type="date">
+              <button id="printBtn" class="btn secondary">PDF / Imprimir</button>
+              <button id="wordBtn" class="btn secondary">Word</button>
+              <button id="csvBtn" class="btn secondary">Excel / CSV</button>
+              <button id="emailBtn" class="btn primary">Enviar por correo</button>
+            </div>
+          </div>
+
+          <div id="reportHeader" style="margin-bottom:16px">
+            <h3 style="margin-bottom:8px">Libreta de Control de Cuadrilla</h3>
+            <div style="font-size:13px;font-weight:800;margin-bottom:4px">Encargado del bloque: Marco Tulio Castillo, capataz deshoja</div>
+            <div style="font-size:13px;font-weight:800;margin-bottom:4px">Bloque: <span id="reportBlockText">Sin definir</span></div>
+            <div style="font-size:13px;font-weight:800;margin-bottom:4px">Área total de supervisión: <span id="reportAreaText">Sin definir</span></div>
+            <div class="sub" style="margin-bottom:0">Reporte de actividades por día</div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Trabajador</th><th>Clave</th><th>Cuadrilla</th><th>Labor</th><th>Pieza</th><th>Obra</th><th>Cable</th>
+                  <th>Terreno</th><th>Torre inicial</th><th>Torre final</th><th>Torres</th><th>Hectáreas</th><th>Actividad</th>
+                </tr>
+              </thead>
+              <tbody id="reportRows"></tbody>
+            </table>
+          </div>
+
+          <h3 style="margin-top:22px">Totales por trabajador</h3>
+          <div class="sub">Conteo total de torres y hectáreas al final del reporte.</div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Trabajador</th><th>Clave</th><th>Cuadrilla</th><th>Total torres</th><th>Total hectáreas</th><th>Detalle</th></tr>
+              </thead>
+              <tbody id="reportTotals"></tbody>
+            </table>
+          </div>
+
+          <div class="note hidden-print" style="margin-top:14px">
+            En esta versión de prueba el botón de correo abre el cliente de correo del dispositivo con el resumen del reporte. 
+            Si desea envío automático real desde un servidor, en la versión GitHub final se puede conectar a una pasarela o backend.
+          </div>
+        </div>
+      </section>
+
+      <section id="ajustes" class="section">
+        <div class="grid equal">
+          <div class="card">
+            <div class="badge">Configuración de salida</div>
+            <h3 style="margin-top:12px">Correo de reportes</h3>
+            <div class="sub">El bloque y el área de supervisión se administran desde Control de bloque.</div>
+            <form id="settingsForm">
+              <div class="form-grid">
+                <div class="field full">
+                  <label>Correo destino del reporte</label>
+                  <input id="emailInput" type="email" placeholder="ejemplo@correo.com">
+                </div>
+              </div>
+              <div class="actions">
+                <button type="submit" class="btn primary">Guardar correo</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="card">
+            <h3>Instalable y sin conexión</h3>
+            <div class="sub">Esta prueba está pensada para teléfonos, tablets, computadoras y trabajo offline.</div>
+            <ul style="margin:0;padding-left:18px;line-height:1.7;color:#4d5f6c">
+              <li>Diseño adaptable para móvil y escritorio.</li>
+              <li>Datos locales con IndexedDB.</li>
+              <li>Instalable como aplicación PWA.</li>
+              <li>Service worker para abrir sin conexión luego de la primera carga.</li>
+              <li>Lista para subir a GitHub Pages.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <nav class="mobile-nav" style="grid-template-columns:repeat(4,1fr)">
+    <button class="nav-btn active" data-view="inicio">Bloque</button>
+    <button class="nav-btn" data-view="jornada">Jornada</button>
+    <button class="nav-btn" data-view="reportes">Reportes</button>
+    <button class="nav-btn" data-view="ajustes">Ajustes</button>
+  </nav>
+
+  <script>
+    const ENCARGADO_FIJO = 'Marco Tulio Castillo, capataz deshoja';
+    const DB_NAME = 'libreta_control_cuadrilla_pwa_v1';
+    const DB_VERSION = 1;
+    const SETTINGS = { bloque: 'bloque_actual', area: 'area_supervision_total', email: 'correo_reporte' };
+    let db, deferredPrompt = null;
+
+    const $ = (id) => document.getElementById(id);
+    const today = () => new Date().toISOString().slice(0,10);
+    const esc = (v) => String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;', "'":'&#039;'}[m]));
+    const fmt2 = (n) => Number(n || 0).toFixed(2);
+
+    function showView(view){
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      const section = document.getElementById(view);
+      if(section) section.classList.add('active');
+      document.querySelectorAll(`.nav-btn[data-view="${view}"]`).forEach(b => b.classList.add('active'));
+      const meta = {
+        inicio:['Control de bloque','Capataz, bloque, área total de supervisión y base de trabajadores.'],
+        jornada:['Jornada','Registro rápido en campo y resultados por trabajador.'],
+        reportes:['Reportes','Generación, descarga y envío del informe final.'],
+        ajustes:['Ajustes','Configuración del correo para los reportes.']
+      };
+      $('pageTitle').textContent = meta[view][0];
+      $('pageDesc').textContent = meta[view][1];
+      if(view === 'reportes') renderReports();
+    }
+
+    async function openDB(){
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = (e) => {
+          const d = e.target.result;
+          if(!d.objectStoreNames.contains('workers')){
+            const s = d.createObjectStore('workers', { keyPath: 'id', autoIncrement: true });
+            s.createIndex('name', 'name', { unique: false });
+          }
+          if(!d.objectStoreNames.contains('records')){
+            const s = d.createObjectStore('records', { keyPath: 'id', autoIncrement: true });
+            s.createIndex('date', 'date', { unique: false });
+          }
+          if(!d.objectStoreNames.contains('settings')){
+            d.createObjectStore('settings', { keyPath: 'key' });
+          }
+        };
+        req.onsuccess = () => { db = req.result; resolve(db); };
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    function txStore(name, mode='readonly'){
+      return db.transaction(name, mode).objectStore(name);
+    }
+    function getAll(store){
+      return new Promise((resolve, reject) => {
+        const req = txStore(store).getAll();
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => reject(req.error);
+      });
+    }
+    function put(store, obj){
+      return new Promise((resolve, reject) => {
+        const req = txStore(store, 'readwrite').put(obj);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+    function add(store, obj){
+      return new Promise((resolve, reject) => {
+        const req = txStore(store, 'readwrite').add(obj);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+    function removeItem(store, id){
+      return new Promise((resolve, reject) => {
+        const req = txStore(store, 'readwrite').delete(Number(id));
+        req.onsuccess = () => resolve(true);
+        req.onerror = () => reject(req.error);
+      });
+    }
+    async function getSetting(key, fallback=''){
+      return new Promise((resolve, reject) => {
+        const req = txStore('settings').get(key);
+        req.onsuccess = () => resolve(req.result?.value ?? fallback);
+        req.onerror = () => reject(req.error);
+      });
+    }
+    async function setSetting(key, value){
+      return put('settings', { key, value });
+    }
+
+    function parseTower(value){
+      const s = String(value || '').trim().toUpperCase();
+      if(!s) return null;
+      const m = s.match(/^(.*?)(\d+)$/);
+      if(!m) return null;
+      return { prefix: m[1].replace(/[\s_-]+$/,''), number: Number(m[2]) };
+    }
+    function computeTowers(start, end){
+      const a = parseTower(start);
+      const b = parseTower(end);
+      if(!a || !b || a.prefix !== b.prefix) return 0;
+      return Math.abs(b.number - a.number) + 1;
+    }
+
+    function aggregateByWorker(rows){
+      const map = new Map();
+      rows.forEach(r => {
+        const key = `${r.workerId}|${r.workerName}`;
+        if(!map.has(key)){
+          map.set(key, {
+            workerName: r.workerName,
+            code: r.code,
+            team: r.team,
+            towers: 0,
+            hectares: 0,
+            details: new Set()
+          });
+        }
+        const item = map.get(key);
+        item.towers += Number(r.totalTowers || 0);
+        item.hectares += Number(r.hectares || 0);
+        if(r.activity) item.details.add(r.activity);
+      });
+      return [...map.values()].sort((a,b) => a.workerName.localeCompare(b.workerName));
+    }
+
+    async function refreshWorkerSelect(){
+      const workers = await getAll('workers');
+      $('workerSelect').innerHTML = '<option value="">Seleccione…</option>' + workers
+        .sort((a,b)=>a.name.localeCompare(b.name))
+        .map(w => `<option value="${w.id}">${esc(w.name)} · ${esc(w.code)}</option>`).join('');
+      $('kpiWorkers').textContent = workers.length;
+    }
+
+    async function renderWorkers(){
+      const workers = await getAll('workers');
+      await refreshWorkerSelect();
+      const q = $('workerSearch').value.trim().toLowerCase();
+      const filtered = workers.filter(w => [w.name,w.code,w.team,w.labor].join(' ').toLowerCase().includes(q));
+
+      $('workerList').innerHTML = filtered.length ? filtered.map(w => `
+        <div class="worker-item">
+          <div>
+            <h4>${esc(w.name)}</h4>
+            <p><strong>Clave:</strong> ${esc(w.code)} · <strong>Cuadrilla:</strong> ${esc(w.team)}</p>
+            <p><strong>Labor base:</strong> ${esc(w.labor || '—')}</p>
+          </div>
+          <div class="mini-actions">
+            <button class="btn secondary" onclick="editWorker(${w.id})">Editar</button>
+            <button class="btn danger" onclick="deleteWorker(${w.id})">Eliminar</button>
+          </div>
+        </div>
+      `).join('') : '<div class="empty">No hay trabajadores registrados.</div>';
+    }
+
+    window.editWorker = async (id) => {
+      const workers = await getAll('workers');
+      const w = workers.find(x => x.id === id);
+      if(!w) return;
+      $('workerId').value = w.id;
+      $('workerName').value = w.name;
+      $('workerCode').value = w.code;
+      $('workerTeam').value = w.team;
+      $('workerLabor').value = w.labor || '';
+      showView('inicio');
+      window.scrollTo({ top:0, behavior:'smooth' });
+    };
+
+    window.deleteWorker = async (id) => {
+      if(confirm('¿Eliminar este trabajador de la base local?')){
+        await removeItem('workers', id);
+        await renderAll();
+      }
+    };
+
+    async function workerAutofill(){
+      const workers = await getAll('workers');
+      const w = workers.find(x => x.id === Number($('workerSelect').value));
+      $('claveAuto').value = w?.code || '';
+      $('cuadrillaAuto').value = w?.team || '';
+      $('laborAuto').value = w?.labor || '';
+    }
+
+    function updateComputedResult(){
+      const towers = computeTowers($('torreInicial').value, $('torreFinal').value);
+      $('torresCalc').textContent = towers;
+      $('haCalc').textContent = fmt2(towers / 10);
+    }
+
+    async function renderDaily(){
+      const date = $('jornadaDate').value || today();
+      $('jornadaDate').value = date;
+      const records = (await getAll('records')).filter(r => r.date === date).sort((a,b)=>a.workerName.localeCompare(b.workerName));
+      const block = await getSetting(SETTINGS.bloque, '');
+      $('recordsTable').innerHTML = records.length ? records.map(r => `
+        <tr>
+          <td>${esc(r.date)}</td>
+          <td>${esc(r.block || block || 'Sin definir')}</td>
+          <td>${esc(r.workerName)}</td>
+          <td>${esc(r.code)}</td>
+          <td>${esc(r.team)}</td>
+          <td>${esc(r.labor)}</td>
+          <td>${esc(r.towerStart)}</td>
+          <td>${esc(r.towerEnd)}</td>
+          <td>${esc(r.totalTowers)}</td>
+          <td>${fmt2(r.hectares)}</td>
+          <td>${esc(r.activity)}</td>
+        </tr>
+      `).join('') : '<tr><td colspan="11" class="empty">No hay registros para esta fecha.</td></tr>';
+
+      const agg = aggregateByWorker(records);
+      $('jornadaSummary').innerHTML = agg.length ? agg.map(a => `
+        <div class="summary-card">
+          <h4>${esc(a.workerName)}</h4>
+          <p><strong>Clave:</strong> ${esc(a.code)} · <strong>Cuadrilla:</strong> ${esc(a.team)}</p>
+          <p><strong>Total torres:</strong> ${a.towers}</p>
+          <p><strong>Total hectáreas:</strong> ${fmt2(a.hectares)} ha</p>
+          <p><strong>Detalle:</strong> ${esc([...a.details].join(' | ') || '—')}</p>
+        </div>
+      `).join('') : '<div class="empty">Sin resultados para la fecha seleccionada.</div>';
+    }
+
+
+    async function renderReports(){
+      const date = $('reportDate').value || today();
+      $('reportDate').value = date;
+      const rows = (await getAll('records')).filter(r => r.date === date).sort((a,b)=>a.workerName.localeCompare(b.workerName));
+      const currentBlock = await getSetting(SETTINGS.bloque, '');
+      const currentArea = await getSetting(SETTINGS.area, '');
+      const block = rows.length ? (rows[0].block || currentBlock) : currentBlock;
+      const area = rows.length ? (rows[0].supervisionArea ?? currentArea) : currentArea;
+      $('reportBlockText').textContent = block || 'Sin definir';
+      $('reportAreaText').textContent = area !== '' && area !== null ? `${fmt2(area)} ha` : 'Sin definir';
+
+      $('reportRows').innerHTML = rows.length ? rows.map(r => `
+        <tr>
+          <td>${esc(r.workerName)}</td><td>${esc(r.code)}</td><td>${esc(r.team)}</td><td>${esc(r.labor)}</td>
+          <td>${esc(r.piece)}</td><td>${esc(r.work)}</td><td>${esc(r.cable)}</td><td>${esc(r.terrain)}</td>
+          <td>${esc(r.towerStart)}</td><td>${esc(r.towerEnd)}</td><td>${esc(r.totalTowers)}</td>
+          <td>${fmt2(r.hectares)}</td><td>${esc(r.activity)}</td>
+        </tr>
+      `).join('') : '<tr><td colspan="13" class="empty">No hay registros para la fecha seleccionada.</td></tr>';
+
+      const agg = aggregateByWorker(rows);
+      $('reportTotals').innerHTML = agg.length ? agg.map(a => `
+        <tr>
+          <td>${esc(a.workerName)}</td><td>${esc(a.code)}</td><td>${esc(a.team)}</td>
+          <td><strong>${a.towers}</strong></td><td><strong>${fmt2(a.hectares)} ha</strong></td>
+          <td>${esc([...a.details].join(' | ') || '—')}</td>
+        </tr>
+      `).join('') : '<tr><td colspan="6" class="empty">No hay totales para esta fecha.</td></tr>';
+    }
+
+    async function renderAll(){
+      await renderWorkers();
+      await renderDaily();
+      await renderReports();
+      await loadSettingsIntoUI();
+    }
+
+    async function loadSettingsIntoUI(){
+      const block = await getSetting(SETTINGS.bloque, '');
+      const area = await getSetting(SETTINGS.area, '');
+      const email = await getSetting(SETTINGS.email, '');
+
+      $('inicioBlockInput').value = block || '';
+      $('supervisionAreaInput').value = area === '' ? '' : area;
+      $('emailInput').value = email || '';
+      $('reportBlockText').textContent = block || 'Sin definir';
+      $('reportAreaText').textContent = area === '' ? 'Sin definir' : `${fmt2(area)} ha`;
+
+      setPersistentFieldState('inicioBlockInput', 'blockEditBtn', Boolean(block));
+      setPersistentFieldState('supervisionAreaInput', 'areaEditBtn', area !== '' && area !== null);
+    }
+
+    function setPersistentFieldState(inputId, buttonId, saved){
+      const input = $(inputId);
+      const button = $(buttonId);
+      input.readOnly = saved;
+      button.textContent = saved ? 'Editar' : 'Guardar';
+      button.classList.toggle('secondary', saved);
+      button.classList.toggle('primary', !saved);
+    }
+
+    async function handlePersistentEdit(inputId, buttonId, settingKey, type='text'){
+      const input = $(inputId);
+      const button = $(buttonId);
+
+      if(input.readOnly){
+        input.readOnly = false;
+        input.focus();
+        button.textContent = 'Guardar';
+        button.classList.remove('secondary');
+        button.classList.add('primary');
+        return;
+      }
+
+      const raw = input.value.trim();
+      if(!raw){
+        alert(type === 'number' ? 'Ingrese el área total de supervisión.' : 'Ingrese el bloque actual.');
+        return;
+      }
+
+      if(type === 'number' && (!Number.isFinite(Number(raw)) || Number(raw) < 0)){
+        alert('Ingrese un área válida.');
+        return;
+      }
+
+      await setSetting(settingKey, type === 'number' ? Number(raw) : raw);
+      await loadSettingsIntoUI();
+      await renderReports();
+      alert(type === 'number'
+        ? 'Área total de supervisión guardada. Permanecerá vigente hasta que sea editada.'
+        : 'Bloque actual guardado. Permanecerá vigente hasta que sea editado.');
+    }
+
+    function buildRowsForDate(rows){
+      return rows.map(r => [
+        r.date,
+        r.block || '',
+        r.supervisionArea ?? '',
+        ENCARGADO_FIJO,
+        r.workerName,
+        r.code,
+        r.team,
+        r.labor,
+        r.piece,
+        r.work,
+        r.cable,
+        r.terrain,
+        r.towerStart,
+        r.towerEnd,
+        r.totalTowers,
+        fmt2(r.hectares),
+        r.activity
+      ]);
+    }
+
+    function buildEmailText(date, block, area, rows){
+      const agg = aggregateByWorker(rows);
+      let text = `Libreta de Control de Cuadrilla
+Fecha: ${date}
+Encargado del bloque: ${ENCARGADO_FIJO}
+Bloque: ${block || 'Sin definir'}
+Área total de supervisión: ${area !== '' && area !== null ? fmt2(area) + ' ha' : 'Sin definir'}
+
+`;
+      text += 'Totales por trabajador:\n';
+      if(!agg.length){
+        text += '- Sin registros para la fecha seleccionada.\n';
+      } else {
+        agg.forEach(a => {
+          text += `- ${a.workerName} | Torres: ${a.towers} | Hectáreas: ${fmt2(a.hectares)} | Detalle: ${[...a.details].join(' | ')}\n`;
+        });
+      }
+      return text;
+    }
+
+    async function getReportRows(){
+      const date = $('reportDate').value || today();
+      const rows = (await getAll('records')).filter(r => r.date === date).sort((a,b)=>a.workerName.localeCompare(b.workerName));
+      const currentBlock = await getSetting(SETTINGS.bloque, '');
+      const currentArea = await getSetting(SETTINGS.area, '');
+      const block = rows.length ? (rows[0].block || currentBlock) : currentBlock;
+      const area = rows.length ? (rows[0].supervisionArea ?? currentArea) : currentArea;
+      return { date, rows, block, area };
+    }
+
+    async function exportCSV(){
+      const { date, rows } = await getReportRows();
+      const headers = ['Fecha','Bloque','Área total de supervisión (ha)','Encargado del bloque','Trabajador','Clave','Cuadrilla','Labor','Pieza','Obra','Cable','Terreno','Torre inicial','Torre final','Torres','Hectáreas','Actividad'];
+      const body = buildRowsForDate(rows);
+      const csv = [headers, ...body]
+        .map(row => row.map(v => `"${String(v ?? '').replaceAll('"','""')}"`).join(','))
+        .join('\n');
+      const blob = new Blob(['\ufeff' + csv], { type:'text/csv;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `control_cuadrilla_${date}.csv`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    async function exportWord(){
+      const { date, rows, block, area } = await getReportRows();
+      const rowHtml = rows.map(r => `
+        <tr>
+          <td>${esc(r.workerName)}</td><td>${esc(r.code)}</td><td>${esc(r.team)}</td><td>${esc(r.labor)}</td>
+          <td>${esc(r.piece)}</td><td>${esc(r.work)}</td><td>${esc(r.cable)}</td><td>${esc(r.terrain)}</td>
+          <td>${esc(r.towerStart)}</td><td>${esc(r.towerEnd)}</td><td>${esc(r.totalTowers)}</td>
+          <td>${fmt2(r.hectares)}</td><td>${esc(r.activity)}</td>
+        </tr>`).join('');
+      const doc = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+        body{font-family:Arial;padding:18px} table{border-collapse:collapse;width:100%}
+        th,td{border:1px solid #999;padding:6px;font-size:10pt;vertical-align:top} h2{margin:0 0 8px}
+        p{margin:0 0 6px}
+      </style></head><body>
+      <h2>Libreta de Control de Cuadrilla</h2>
+      <p><strong>Encargado del bloque:</strong> ${esc(ENCARGADO_FIJO)}</p>
+      <p><strong>Bloque:</strong> ${esc(block || 'Sin definir')}</p>
+      <p><strong>Área total de supervisión:</strong> ${area !== '' && area !== null ? esc(fmt2(area)) + ' ha' : 'Sin definir'}</p>
+      <p><strong>Fecha:</strong> ${esc(date)}</p>
+      <table><tr>
+      <th>Trabajador</th><th>Clave</th><th>Cuadrilla</th><th>Labor</th><th>Pieza</th><th>Obra</th><th>Cable</th><th>Terreno</th><th>Torre inicial</th><th>Torre final</th><th>Torres</th><th>Hectáreas</th><th>Actividad</th>
+      </tr>${rowHtml}</table></body></html>`;
+      const blob = new Blob(['\ufeff' + doc], { type: 'application/msword' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `control_cuadrilla_${date}.doc`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    async function sendByEmail(){
+      const { date, rows, block, area } = await getReportRows();
+      const to = await getSetting(SETTINGS.email, '');
+      const subject = encodeURIComponent(`Reporte Libreta de Control de Cuadrilla - ${date}`);
+      const body = encodeURIComponent(buildEmailText(date, block, area, rows));
+      const mailto = `mailto:${encodeURIComponent(to)}?subject=${subject}&body=${body}`;
+      if(navigator.share){
+        try{
+          await navigator.share({
+            title: `Reporte de cuadrilla ${date}`,
+            text: buildEmailText(date, block, area, rows)
+          });
+          return;
+        }catch(e){}
+      }
+      window.location.href = mailto;
+    }
+
+    function updateOnlineState(){
+      $('onlineState').textContent = navigator.onLine ? 'En línea' : 'Sin conexión';
+      $('onlineState').className = 'online-state ' + (navigator.onLine ? 'ok' : 'off');
+    }
+
+    document.querySelectorAll('.nav-btn').forEach(btn => btn.addEventListener('click', () => showView(btn.dataset.view)));
+    $('syncBtn').addEventListener('click', () => renderAll());
+    $('jornadaDate').addEventListener('change', renderDaily);
+    $('reportDate').addEventListener('change', renderReports);
+    $('workerSearch').addEventListener('input', renderWorkers);
+    $('workerSelect').addEventListener('change', workerAutofill);
+    $('torreInicial').addEventListener('input', updateComputedResult);
+    $('torreFinal').addEventListener('input', updateComputedResult);
+    $('csvBtn').addEventListener('click', exportCSV);
+    $('wordBtn').addEventListener('click', exportWord);
+    $('printBtn').addEventListener('click', () => window.print());
+    $('emailBtn').addEventListener('click', sendByEmail);
+    $('blockEditBtn').addEventListener('click', () => handlePersistentEdit('inicioBlockInput', 'blockEditBtn', SETTINGS.bloque, 'text'));
+    $('areaEditBtn').addEventListener('click', () => handlePersistentEdit('supervisionAreaInput', 'areaEditBtn', SETTINGS.area, 'number'));
+
+    $('clearWorkerBtn').addEventListener('click', () => {
+      $('workerId').value = '';
+      $('workerForm').reset();
+    });
+
+    $('workerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const obj = {
+        name: $('workerName').value.trim(),
+        code: $('workerCode').value.trim(),
+        team: $('workerTeam').value.trim(),
+        labor: $('workerLabor').value.trim()
+      };
+      if($('workerId').value) obj.id = Number($('workerId').value);
+      await put('workers', obj);
+      $('workerForm').reset();
+      $('workerId').value = '';
+      await renderAll();
+      alert('Trabajador guardado correctamente.');
+    });
+
+    $('clearRecordBtn').addEventListener('click', () => {
+      $('recordForm').reset();
+      $('fecha').value = today();
+      $('recordId').value = '';
+      $('torresCalc').textContent = '0';
+      $('haCalc').textContent = '0.00';
+      $('claveAuto').value = '';
+      $('cuadrillaAuto').value = '';
+      $('laborAuto').value = '';
+    });
+
+    $('recordForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const workers = await getAll('workers');
+      const worker = workers.find(w => w.id === Number($('workerSelect').value));
+      if(!worker){ alert('Seleccione un trabajador.'); return; }
+
+      const totalTowers = computeTowers($('torreInicial').value, $('torreFinal').value);
+      const hectares = totalTowers / 10;
+      const block = await getSetting(SETTINGS.bloque, '');
+      const supervisionArea = await getSetting(SETTINGS.area, '');
+
+      const rec = {
+        date: $('fecha').value,
+        workerId: worker.id,
+        workerName: worker.name,
+        code: worker.code,
+        team: worker.team,
+        labor: $('laborAuto').value.trim(),
+        piece: $('pieza').value.trim(),
+        work: $('obra').value.trim(),
+        cable: $('cable').value.trim(),
+        terrain: $('terreno').value.trim(),
+        towerStart: $('torreInicial').value.trim(),
+        towerEnd: $('torreFinal').value.trim(),
+        totalTowers,
+        hectares,
+        activity: $('actividad').value.trim(),
+        block,
+        supervisionArea,
+        encargado: ENCARGADO_FIJO,
+        createdAt: new Date().toISOString()
+      };
+
+      if($('recordId').value){
+        rec.id = Number($('recordId').value);
+        await put('records', rec);
+      }else{
+        await add('records', rec);
+      }
+
+      const keepDate = $('fecha').value;
+      $('recordForm').reset();
+      $('fecha').value = keepDate || today();
+      $('torresCalc').textContent = '0';
+      $('haCalc').textContent = '0.00';
+      $('claveAuto').value = '';
+      $('cuadrillaAuto').value = '';
+      $('laborAuto').value = '';
+      $('recordId').value = '';
+
+      await renderAll();
+      alert('Registro diario guardado correctamente.');
+    });
+
+    $('settingsForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await setSetting(SETTINGS.email, $('emailInput').value.trim());
+      await loadSettingsIntoUI();
+      alert('Correo de reportes guardado.');
+    });
+
+    window.addEventListener('online', updateOnlineState);
+    window.addEventListener('offline', updateOnlineState);
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      $('installBtn').classList.add('show-install');
+    });
+
+    $('installBtn').addEventListener('click', async () => {
+      if(!deferredPrompt) return;
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      $('installBtn').classList.remove('show-install');
+    });
+
+    if('serviceWorker' in navigator){
+      window.addEventListener('load', async () => {
+        try{ await navigator.serviceWorker.register('./sw.js'); }catch(e){}
+      });
+    }
+
+    (async function init(){
+      await openDB();
+      $('fecha').value = today();
+      $('jornadaDate').value = today();
+      $('reportDate').value = today();
+      updateOnlineState();
+      await renderAll();
+    })();
+  </script>
+</body>
+</html>

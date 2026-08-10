@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="g1" x1="0" x2="1">
+      <stop offset="0" stop-color="#0f766e"/>
+      <stop offset="1" stop-color="#22577a"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="0" x2="1">
+      <stop offset="0" stop-color="#ffd166"/>
+      <stop offset="1" stop-color="#f59e0b"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="110" fill="#fff9f1"/>
+  <circle cx="256" cy="256" r="206" fill="url(#g1)" opacity=".08"/>
+  <!-- banana plant leaves -->
+  <path d="M121 212c12-52 55-92 118-108-17 46-47 86-90 119-12 9-27 2-28-11z" fill="#56c08a"/>
+  <path d="M198 160c25-50 78-76 134-69-29 38-69 67-121 85-15 5-22-6-13-16z" fill="#77d68f"/>
+  <path d="M267 138c47-31 103-29 146 1-44 18-92 25-144 19-16-2-17-12-2-20z" fill="#38a169"/>
+  <!-- notebook -->
+  <rect x="126" y="233" width="186" height="174" rx="22" fill="#ffffff" stroke="#dce6ea" stroke-width="8"/>
+  <rect x="145" y="255" width="148" height="15" rx="7" fill="#e8f1f5"/>
+  <rect x="145" y="289" width="120" height="15" rx="7" fill="#e8f1f5"/>
+  <rect x="145" y="323" width="132" height="15" rx="7" fill="#e8f1f5"/>
+  <rect x="145" y="357" width="108" height="15" rx="7" fill="#e8f1f5"/>
+  <rect x="110" y="233" width="24" height="174" rx="10" fill="#ffd166"/>
+  <circle cx="122" cy="266" r="5" fill="#fff"/>
+  <circle cx="122" cy="301" r="5" fill="#fff"/>
+  <circle cx="122" cy="336" r="5" fill="#fff"/>
+  <circle cx="122" cy="371" r="5" fill="#fff"/>
+  <!-- inspector -->
+  <circle cx="372" cy="249" r="35" fill="#ffd9b3"/>
+  <path d="M338 237c4-26 55-42 82-18-7 13-23 20-42 20-15 0-29-1-40-2z" fill="#0f766e"/>
+  <rect x="331" y="286" width="86" height="104" rx="28" fill="#22577a"/>
+  <rect x="353" y="302" width="43" height="56" rx="12" fill="#ffffff" opacity=".95"/>
+  <path d="M418 321l25-10 11 23-27 10z" fill="#ffd166"/>
+  <circle cx="436" cy="322" r="17" fill="none" stroke="#f59e0b" stroke-width="8"/>
+  <path d="M421 356l18-18" stroke="#f59e0b" stroke-width="8" stroke-linecap="round"/>
+  <!-- bananas -->
+  <path d="M261 397c18 24 53 33 80 25-10 20-39 35-66 31-18-3-26-30-14-56z" fill="url(#g2)"/>
+  <path d="M290 412c19 15 46 18 68 10-10 15-29 26-48 25-17 0-27-15-20-35z" fill="#ffd166"/>
+</svg>
