@@ -1,4 +1,4 @@
-# Libreta de Control de Cuadrilla — Modular 1.4.0
+# Libreta de Control de Cuadrilla — Modular 1.4.1
 
 Se recupera la interfaz anterior organizada por módulos:
 
@@ -23,3 +23,8 @@ Se recupera la interfaz anterior organizada por módulos:
 - PWA instalable y funcionamiento offline.
 - Reportes PDF, Word y Excel con la misma matriz visual de 6 columnas.
 - Botón pequeño “Borrar” a la par de cada trabajador registrado.
+
+## Corrección 1.4.1
+- Bloque actual siempre editable.
+- Área total de supervisión siempre editable.
+- Ambos valores permanecen guardados hasta que el usuario los modifique y pulse Guardar cambios.

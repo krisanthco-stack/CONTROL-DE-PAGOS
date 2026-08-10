@@ -65,25 +65,20 @@ function resetForm(keepDate=true){
   $('fecha').value=date;$('clave').value=DEFAULTS.clave;$('pieza').value=DEFAULTS.pieza;$('labor').value=DEFAULTS.labor;
   clearDraft();updateCalc();
 }
-function setPersistentState(inputId,buttonId,saved){
-  const input=$(inputId),btn=$(buttonId);
-  input.readOnly=saved;
-  btn.textContent=saved?'Editar':'Guardar';
-  btn.className=saved?'btn secondary':'btn primary';
-}
-async function persistentHandler(inputId,buttonId,key,isNumber=false){
+async function savePersistentField(inputId,key,isNumber=false){
   const input=$(inputId);
-  if(input.readOnly){input.readOnly=false;input.focus();$(buttonId).textContent='Guardar';$(buttonId).className='btn primary';return}
   const raw=input.value.trim();
   if(!raw)return alert('Ingrese un valor antes de guardar.');
   if(isNumber&&(!Number.isFinite(Number(raw))||Number(raw)<0))return alert('Ingrese un área válida.');
-  await setSetting(key,isNumber?Number(raw):raw);await loadSettings();
+  await setSetting(key,isNumber?Number(raw):raw);
+  await loadSettings();
+  alert(isNumber?'Área total de supervisión guardada.':'Bloque actual guardado.');
 }
 async function loadSettings(){
   const block=await getSetting(SETTINGS.block,''),area=await getSetting(SETTINGS.area,''),email=await getSetting(SETTINGS.email,'');
   $('blockInput').value=block;$('areaInput').value=area;$('emailInput').value=email;
-  setPersistentState('blockInput','blockEditBtn',Boolean(block));
-  setPersistentState('areaInput','areaEditBtn',area!==''&&area!==null);
+  $('blockInput').readOnly=false;
+  $('areaInput').readOnly=false;
 }
 
 async function renderWorkers(){
@@ -194,8 +189,8 @@ function switchView(id){
 }
 function updateConnection(){const on=navigator.onLine;$('connectionDot').classList.toggle('online',on);$('connectionLabel').textContent=on?'En línea':'Sin conexión';$('connectionText').textContent=on?'En línea':'Trabajando sin conexión'}
 document.querySelectorAll('.nav-btn').forEach(b=>b.addEventListener('click',()=>switchView(b.dataset.view)));
-$('blockEditBtn').addEventListener('click',()=>persistentHandler('blockInput','blockEditBtn',SETTINGS.block,false));
-$('areaEditBtn').addEventListener('click',()=>persistentHandler('areaInput','areaEditBtn',SETTINGS.area,true));
+$('blockEditBtn').addEventListener('click',()=>savePersistentField('blockInput',SETTINGS.block,false));
+$('areaEditBtn').addEventListener('click',()=>savePersistentField('areaInput',SETTINGS.area,true));
 $('workerSearch').addEventListener('input',renderWorkers);
 $('addWorkerBtn').addEventListener('click',async()=>{const name=$('workerName').value.trim();if(!name)return alert('Ingrese el nombre del trabajador.');await add('workers',{name,code:$('workerCode').value.trim()||DEFAULTS.clave,team:$('workerTeam').value.trim(),labor:DEFAULTS.labor});$('workerName').value='';$('workerTeam').value='';$('workerCode').value=DEFAULTS.clave;await renderWorkers()});
 $('workerList').addEventListener('click',async e=>{const id=e.target.dataset.deleteWorker;if(id&&confirm('¿Borrar este trabajador de la base local?')){await del('workers',id);await renderWorkers()}});

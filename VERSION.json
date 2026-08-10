@@ -1,6 +1,6 @@
 {
   "app": "Libreta de Control de Cuadrilla",
-  "version": "1.4.0-modular",
+  "version": "1.4.1-modular",
   "ui": "modular",
   "modules": [
     "Control de bloque",
@@ -21,5 +21,8 @@
   "worker_delete_button": "small-inline",
   "autosave": true,
   "pwa": true,
-  "reports": "PDF Word Excel compact 6-column shared matrix"
+  "reports": "PDF Word Excel compact 6-column shared matrix",
+  "block_editable": true,
+  "supervision_area_editable": true,
+  "block_area_edit_mode": "always-editable-save-changes"
 }
